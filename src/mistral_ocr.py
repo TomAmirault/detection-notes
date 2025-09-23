@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-api_key = os.getenv("MISTRAL_API_KEY")
+api_key = os.getenv("MISTRAL_API_KEY_TOM")
 client = Mistral(api_key=api_key)
 
 # ------ exemple simple avec une image en ligne ------
