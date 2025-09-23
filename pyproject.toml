@@ -1,0 +1,9 @@
+[project]
+name = "detection-notes"
+version = "0.1.0"
+requires-python = ">=3.10"
+
+dependencies = [
+    "mistralai>=1.9.10",
+    "python-dotenv>=1.1.1",
+]
