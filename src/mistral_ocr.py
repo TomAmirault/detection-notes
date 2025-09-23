@@ -1,10 +1,11 @@
+import base64
 import os
 from mistralai import Mistral
 from dotenv import load_dotenv
 
 load_dotenv()
 
-api_key = os.getenv("MISTRAL_API_KEY_TOM")
+api_key = os.getenv("MISTRAL_API_KEY")
 client = Mistral(api_key=api_key)
 
 # ------ exemple simple avec une image en ligne ------
@@ -22,11 +23,10 @@ client = Mistral(api_key=api_key)
 
 # ------ on décrypte le texte d'une image locale ------
 
-import base64
 
 def encode_image(image_path):
     with open(image_path, "rb") as image_file:
-            return base64.b64encode(image_file.read()).decode('utf-8')
+        return base64.b64encode(image_file.read()).decode('utf-8')
 
 # image_path = "images/IMG_3232.JPG"
 
@@ -36,7 +36,7 @@ def encode_image(image_path):
 #     model="mistral-ocr-latest",
 #     document={
 #         "type": "image_url",
-#         "image_url": f"data:image/jpeg;base64,{base64_image}" 
+#         "image_url": f"data:image/jpeg;base64,{base64_image}"
 #     },
 #     include_image_base64=True
 # )
@@ -44,6 +44,7 @@ def encode_image(image_path):
 # extracted_text = ocr_response.pages[0].markdown
 
 # ------ pipeline pour analyser le texte d'images en local ------
+
 
 image_folder = "images"
 image_extensions = [".png", ".jpg", ".jpeg"]
