@@ -45,8 +45,6 @@ def detect_paper(img):
 # Lancement de la webcam
 while True:
     ret, img = cap.read()
-    processed_img = processed_image(img)
-
     possible_papers = detect_paper(img)
     img_show = img.copy()
 
