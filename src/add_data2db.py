@@ -1,16 +1,31 @@
 ### image_path -> load_image -> encode_image -> mistral_ocr_annotation
 
-image_path = "/Users/tomamirault/Documents/Projects/p1-dty-rte/detection-notes/data/images/raw/IMG_3268.JPG"
-
+#image_path = "/Users/tomamirault/Documents/Projects/p1-dty-rte/detection-notes/data/images/raw/IMG_3268.JPG"
 
 from capture.encode_image import encode_image
-
-image_encoded = encode_image(image_path) # base64 string
-
-
 from recog.mistral_ocr_annotation import image_annotation
+from backend.db import insert_note_meta, list_notes
+import json
 
-extracted_data = image_annotation(image_encoded)
+
+
+def add_data2db(image_path: str):
+    
+  image_encoded = encode_image(image_path) # base64 string
+
+  extracted_data = image_annotation(image_encoded)
+
+
+
+  new_id = insert_note_meta(extracted_data, img_path_proc=image_path)
+  print("Inserted id:", new_id)
+
+
+  rows = list_notes(10000)
+  for r in rows:
+      print(json.dumps(r, ensure_ascii=False, indent=2))  # Affichage de la db dans le terminal
+
+
 
 """
 en dict
@@ -25,15 +40,3 @@ extracted_data = {
   "additional_info": "La note inclut un schéma de changement de relais de 40KV à 20KV."
 }
 """
-
-from backend.db import insert_note_meta, list_notes
-
-
-new_id = insert_note_meta(extracted_data, img_path_proc="/Users/tomamirault/Documents/Projects/p1-dty-rte/detection-notes/data/images/raw/IMG_3268.JPG")
-print("Inserted id:", new_id)
-
-import json
-
-rows = list_notes(10000)
-for r in rows:
-    print(json.dumps(r, ensure_ascii=False, indent=2))  # Affichage exhaustif et lisible

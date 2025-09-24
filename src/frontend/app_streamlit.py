@@ -79,7 +79,7 @@ with st.sidebar:
 
     st.caption(f"DB: `{DB_PATH}`")
     if st.button("Rafraîchir maintenant"):
-        st.experimental_rerun()
+        st.rerun()
 
 # Auto-refresh léger
 if REFRESH_SECONDS > 0:
