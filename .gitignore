@@ -208,3 +208,13 @@ __marimo__/
 
 # petits ajouts sympathiques au git ignore
 .DS_Store
+
+
+# Bases de données locales
+data/db/*.sqlite
+
+# Images de test
+data/images/
+
+# Logs
+logs/

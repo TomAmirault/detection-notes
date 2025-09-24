@@ -1,5 +1,22 @@
 # detection-notes
 
+### Architecture
+
+rte-notes/
+  src/
+    capture/
+      load_image.py        # lit une image depuis un chemin
+      preprocess.py        # transforme l'image pour l'HTR
+    recog/
+      ocr_tesseract.py     # baseline HTR/OCR local
+      mistral_ocr.py      # appel API Mistral
+    post/
+      extract_meta.py      # règles simples + LLM
+    backend/
+      db.py                # connexion SQLite + insert/select
+      models.py            # schéma SQLAlchemy (Notes)
+
+
 
 
 ## Getting started
