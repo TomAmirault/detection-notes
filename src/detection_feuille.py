@@ -1,5 +1,4 @@
 import cv2
-import numpy as np
 import time
 
 # Timer
@@ -55,6 +54,10 @@ while True:
     # if cv2.waitKey(1) == ord('q'):
     #    break
 
+    # Rafraîchit la fenêtre (attente minimale)
+    cv2.waitKey(1)
+
+    #  Timer
     if time.time() - start > 30:
         break
 
