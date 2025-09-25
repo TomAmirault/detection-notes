@@ -12,6 +12,7 @@ import subprocess
 
 os.makedirs("./sampleH264", exist_ok=True)
 os.makedirs("./sampleMP4", exist_ok=True)
+os.makedirs("./photos", exist_ok=True)
 
 # Initialisation de la caméra
 
@@ -60,6 +61,7 @@ try:
         time.sleep(interval)
 
         # Capture d'images
+        
 
         # Capture de vidéos
 
