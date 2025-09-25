@@ -40,3 +40,6 @@ extracted_data = {
   "additional_info": "La note inclut un schéma de changement de relais de 40KV à 20KV."
 }
 """
+
+
+add_data2db("/Users/tomamirault/Documents/Projects/p1-dty-rte/detection-notes/data/images/raw/IMG_3268.JPG")

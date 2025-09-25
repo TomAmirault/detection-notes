@@ -6,6 +6,8 @@ from typing import List, Dict, Any, Optional
 
 import streamlit as st
 
+### Pour lancer le front : streamlit run src/frontend/app_streamlit.py
+
 # --- Config ---
 DB_PATH = os.environ.get("RTE_DB_PATH", "data/db/notes.sqlite")
 PAGE_TITLE = "RTE Notes — V0"
