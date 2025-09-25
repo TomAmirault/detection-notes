@@ -15,8 +15,4 @@ def postprocessed_image(img):
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     enhanced = clahe.apply(gray)
 
-    # Seuillage adaptatif binaire (noir/blanc pur)
-    binary = cv2.adaptiveThreshold(
-        gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 15, 5)
-
-    return binary
+    return enhanced
