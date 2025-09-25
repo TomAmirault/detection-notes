@@ -11,9 +11,9 @@ from datetime import datetime
 # SAVE_DIR = "/home/projetrte/Documents/video_detection"
 # os.makedirs(SAVE_DIR, exist_ok=True)
 
-os.makedirs("./sampleH264", exist_ok=True)
-os.makedirs("./sampleMP4", exist_ok=True)
-os.makedirs("./photos", exist_ok=True)
+# os.makedirs("/home/projetrte/Documents/sampleH264", exist_ok=True)
+# os.makedirs("/home/projetrte/Documents/sampleMP4", exist_ok=True)
+os.makedirs("/home/projetrte/Documents/photos", exist_ok=True)
 
 # Initialisation de la caméra
 
@@ -63,8 +63,9 @@ try:
 
         # Capture d'images
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"photo_{timestamp}.jpg"
+        filename = f"/home/projetrte/Documents/photos/photo_{timestamp}.jpg"
         picam2.capture_file(filename)
+        print("Nouvelle image capturée :", filename[33:])
 
         # Capture de vidéos
 

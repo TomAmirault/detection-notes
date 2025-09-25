@@ -218,3 +218,6 @@ data/images/
 
 # Logs
 logs/
+
+# Dossiers de transit des images captées par la Raspberry
+tmp/
