@@ -12,11 +12,13 @@ LOCAL_DEST_DIR = "../tmp"
 os.makedirs(LOCAL_DEST_DIR, exist_ok=True)
 
 # --- Copier le script sur la Pi ---
+print("Installation du pilote de la caméra sur la Raspberry Pi...")
 subprocess.run([
     "scp", LOCAL_SCRIPT_PATH, f"{RASPBERRY_USER}@{RASPBERRY_IP}:{REMOTE_SCRIPT_PATH}"
 ])
 
 # --- Lancer le script sur la Pi en arrière-plan ---
+print("Démarrage de la capture caméra")
 subprocess.run([
     "ssh", f"{RASPBERRY_USER}@{RASPBERRY_IP}", f"nohup python3 {REMOTE_SCRIPT_PATH} > /home/projetrte/pilote_camera.log 2>&1 &"
 ])
@@ -39,7 +41,7 @@ while True:
                 f"{RASPBERRY_USER}@{RASPBERRY_IP}:{REMOTE_OUTPUT_DIR}/{f}",
                 os.path.join(LOCAL_DEST_DIR, f)
             ])
-
             downloaded_files.add(f)
+            print("Nouveau fichier reçu de la Raspberry :",f)
 
     time.sleep(10)

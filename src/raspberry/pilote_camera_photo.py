@@ -4,6 +4,7 @@ from picamera2 import Picamera2
 from picamera2.encoders import H264Encoder
 import os
 import subprocess
+from datetime import datetime
 
 # Création des dossiers de travail
 
@@ -61,8 +62,9 @@ try:
         time.sleep(interval)
 
         # Capture d'images
-        
-        picam2.capture_file("./photos/photo"+str(i)+".jpg")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"photo_{timestamp}.jpg"
+        picam2.capture_file(filename)
 
         # Capture de vidéos
 
