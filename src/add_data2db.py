@@ -42,4 +42,4 @@ extracted_data = {
 """
 
 
-add_data2db("/Users/tomamirault/Documents/Projects/p1-dty-rte/detection-notes/data/images/raw/IMG_3268.JPG")
+# add_data2db("/Users/tomamirault/Documents/Projects/p1-dty-rte/detection-notes/data/images/raw/IMG_3268.JPG")

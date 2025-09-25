@@ -54,12 +54,18 @@ interval = 4    # secondes
 encoder = H264Encoder(bitrate=10000000)
 i = 0
 
-# Capture des images
+# Fichier d'arrêt
+STOP_FILE = "/home/projetrte/Documents/stop.txt"
 
+# Capture des images
 try:
-    while time.time() - start < duration:
-        i+=1
+    while True :
+        # i+=1
         time.sleep(interval)
+
+        if os.path.exists(STOP_FILE):
+            print("Signal d'arrêt détecté")
+            break
 
         # Capture d'images
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

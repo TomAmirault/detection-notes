@@ -12,92 +12,110 @@ LOCAL_SCRIPT_PATH = WORKING_DIR + "detection-notes/src/raspberry/pilote_camera_p
 REMOTE_SCRIPT_PATH = "/home/projetrte/Documents/pilote_camera_photo.py"
 REMOTE_OUTPUT_DIR = "/home/projetrte/Documents/photos"
 LOCAL_DEST_DIR = WORKING_DIR + "detection-notes/tmp"
+STOP_FILE = "/home/projetrte/Documents/stop.txt"
 
-os.makedirs(LOCAL_DEST_DIR, exist_ok=True)
+try:
 
-# result = subprocess.run(
-#     ["/bin/bash", "/Users/noahparisse/Documents/Paris-digital-lab/P1 RTE/detection-notes/src/exec/connect_raspberry.sh"],
-#     capture_output=True,
-#     text=True
-# )
-# print("STDOUT:\n", result.stdout)
-# print("STDERR:\n", result.stderr)
+    os.makedirs(LOCAL_DEST_DIR, exist_ok=True)
 
-# ssh = SSHClient()
+    # result = subprocess.run(
+    #     ["/bin/bash", "/Users/noahparisse/Documents/Paris-digital-lab/P1 RTE/detection-notes/src/exec/connect_raspberry.sh"],
+    #     capture_output=True,
+    #     text=True
+    # )
+    # print("STDOUT:\n", result.stdout)
+    # print("STDERR:\n", result.stderr)
 
-# ssh.load_system_host_keys()
-# ssh.set_missing_host_key_policy(AutoAddPolicy())
-# ssh.connect("raspberrypi.local", username="projetrte", allow_agent=True, look_for_keys=True,)
+    # ssh = SSHClient()
 
-# --- Copier le script sur la Pi ---
-print("Installation du pilote de la caméra sur la Raspberry Pi...")
+    # ssh.load_system_host_keys()
+    # ssh.set_missing_host_key_policy(AutoAddPolicy())
+    # ssh.connect("raspberrypi.local", username="projetrte", allow_agent=True, look_for_keys=True,)
 
-# with SCPClient(ssh.get_transport()) as scp:
-#     scp.put("local_script.py", "/home/projetrte/remote_script.py")
+    # --- Supprimer le fichier d'arrêt de la Raspberry Pi ---
+    subprocess.run([
+        "ssh", f"{RASPBERRY_USER}@{RASPBERRY_IP}", f"rm -f {STOP_FILE}"
+    ])
 
-# env = os.environ
-# subprocess.run([
-#     "ssh-add", "-l"
-# ])
-subprocess.run([
-    "scp", LOCAL_SCRIPT_PATH, f"{RASPBERRY_USER}@{RASPBERRY_IP}:{REMOTE_SCRIPT_PATH}"
-])
+    # --- Copier le script sur la Pi ---
+    print("Installation du pilote de la caméra sur la Raspberry Pi...")
 
-# --- Lancer le script sur la Pi en arrière-plan ---
-print("Démarrage de la capture caméra")
-subprocess.run([
-    "ssh", f"{RASPBERRY_USER}@{RASPBERRY_IP}", f"nohup python3 {REMOTE_SCRIPT_PATH} > /home/projetrte/Documents/pilote_camera_photo.log 2>&1 &"
-])
+    # with SCPClient(ssh.get_transport()) as scp:
+    #     scp.put("local_script.py", "/home/projetrte/remote_script.py")
 
-print("La caméra a bien démarré.")
-# ssh.exec_command(f"nohup python3 {REMOTE_SCRIPT_PATH} > /home/projetrte/timelapse.log 2>&1 &")
+    # env = os.environ
+    # subprocess.run([
+    #     "ssh-add", "-l"
+    # ])
+    subprocess.run([
+        "scp", LOCAL_SCRIPT_PATH, f"{RASPBERRY_USER}@{RASPBERRY_IP}:{REMOTE_SCRIPT_PATH}"
+    ])
 
-# --- Boucle de récupération des fichiers ---
-downloaded_files = set()
-while True:
-    # lister les fichiers sur la Pi
-    print("Lecture des fichiers sur la Raspberry...")
-    result = subprocess.run(
-        ["ssh", f"{RASPBERRY_USER}@{RASPBERRY_IP}", f"ls {REMOTE_OUTPUT_DIR}"],
-        capture_output=True,
-        text=True
-    )
-    files = result.stdout.splitlines()
+    # --- Lancer le script sur la Pi en arrière-plan ---
+    print("Démarrage de la capture caméra")
+    subprocess.run([
+        "ssh", f"{RASPBERRY_USER}@{RASPBERRY_IP}", f"nohup python3 {REMOTE_SCRIPT_PATH} > /home/projetrte/Documents/pilote_camera_photo.log 2>&1 &"
+    ])
 
-    for f in files:
-        if f not in downloaded_files and f.endswith(".jpg"):
-            local_filepath = os.path.join(LOCAL_DEST_DIR, f)
-            subprocess.run([
-                "scp",
-                f"{RASPBERRY_USER}@{RASPBERRY_IP}:{REMOTE_OUTPUT_DIR}/{f}",
-                local_filepath
-            ])
-            downloaded_files.add(f)
-            add_data2db(local_filepath)
-            print("Nouveau fichier chargé dans la BDD :",f)
+    print("La caméra a bien démarré.")
+    # ssh.exec_command(f"nohup python3 {REMOTE_SCRIPT_PATH} > /home/projetrte/timelapse.log 2>&1 &")
 
-    time.sleep(10)
+    # --- Boucle de récupération des fichiers ---
+    downloaded_files = set()
+    while True:
+        # lister les fichiers sur la Pi
+        print("Lecture des fichiers sur la Raspberry...")
+        result = subprocess.run(
+            ["ssh", f"{RASPBERRY_USER}@{RASPBERRY_IP}", f"ls {REMOTE_OUTPUT_DIR}"],
+            capture_output=True,
+            text=True
+        )
+        files = result.stdout.splitlines()
 
-# try:
-#     while True:
-#         # lister les fichiers sur la Pi
-#         stdin, stdout, stderr = ssh.exec_command(f"ls {REMOTE_OUTPUT_DIR}")
-#         files = stdout.read().decode().splitlines()
+        for f in files:
+            if f not in downloaded_files and f.endswith(".jpg"):
+                local_filepath = os.path.join(LOCAL_DEST_DIR, f)
+                subprocess.run([
+                    "scp",
+                    f"{RASPBERRY_USER}@{RASPBERRY_IP}:{REMOTE_OUTPUT_DIR}/{f}",
+                    local_filepath
+                ])
+                downloaded_files.add(f)
+                add_data2db(local_filepath)
+                print("Nouveau fichier chargé dans la BDD :",f)
 
-#         with SCPClient(ssh.get_transport()) as scp:
-#             for f in files:
-#                 if f not in downloaded_files and f.endswith(".jpg"):  # filtre par type si besoin
-#                     remote_path = os.path.join(REMOTE_OUTPUT_DIR, f)
-#                     local_path = os.path.join(LOCAL_DEST_DIR, f)
-#                     scp.get(remote_path, local_path)
-#                     downloaded_files.add(f)
-#                     print(f"Téléchargé : {f}")
+        time.sleep(10)
 
-#         time.sleep(10)
+    # try:
+    #     while True:
+    #         # lister les fichiers sur la Pi
+    #         stdin, stdout, stderr = ssh.exec_command(f"ls {REMOTE_OUTPUT_DIR}")
+    #         files = stdout.read().decode().splitlines()
 
-# except KeyboardInterrupt:
-#     print("Arrêt du script par l'utilisateur.")
+    #         with SCPClient(ssh.get_transport()) as scp:
+    #             for f in files:
+    #                 if f not in downloaded_files and f.endswith(".jpg"):  # filtre par type si besoin
+    #                     remote_path = os.path.join(REMOTE_OUTPUT_DIR, f)
+    #                     local_path = os.path.join(LOCAL_DEST_DIR, f)
+    #                     scp.get(remote_path, local_path)
+    #                     downloaded_files.add(f)
+    #                     print(f"Téléchargé : {f}")
 
-# finally:
-#     ssh.close()
-#     print("Connexion SSH fermée.")
+    #         time.sleep(10)
+
+    # except KeyboardInterrupt:
+    #     print("Arrêt du script par l'utilisateur.")
+
+    # finally:
+    #     ssh.close()
+    #     print("Connexion SSH fermée.")
+
+except KeyboardInterrupt :
+    subprocess.run([
+        "ssh", f"{RASPBERRY_USER}@{RASPBERRY_IP}", f"touch {STOP_FILE}"
+    ])
+    print("Arrêt demandé par l'utilisateur.")
+finally :
+    subprocess.run([
+        "ssh", f"{RASPBERRY_USER}@{RASPBERRY_IP}", f"touch {STOP_FILE}"
+    ])
