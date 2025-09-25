@@ -33,6 +33,6 @@ def corrected_perspective(img, corners, output_width, output_height):
 
     # Appliquer la transformation
     corrected = cv2.warpPerspective(
-        img, matrix, (output_width, output_height), flags=cv2.INTER_CUBIC)
+        img, matrix, (output_width, output_height), flags=cv2.INTER_LANCZOS4)
 
     return corrected

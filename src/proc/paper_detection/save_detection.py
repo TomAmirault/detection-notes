@@ -4,6 +4,7 @@ import time
 import numpy as np
 from datetime import datetime
 from perspective_corrector import corrected_perspective
+from image_postprocessing import postprocessed_image
 
 # Réglages de sauvegarde
 OUT_DIR = "screenshots"
@@ -44,9 +45,12 @@ def save_detection(frame, quads):
     corrected = corrected_perspective(frame, corners,
                                       output_width=800, output_height=600)
 
+    # Postprocessing
+    post_corrected = postprocessed_image(corrected)
+
     # Sauvegarde
     corrected_path = os.path.join(OUT_DIR, f"paper_corrected_{stamp}.jpg")
-    cv2.imwrite(corrected_path, corrected)
+    cv2.imwrite(corrected_path, post_corrected)
     print(f"[SAVE] {frame_path} (+ corrected perspective)")
 
     last_save_time = now
