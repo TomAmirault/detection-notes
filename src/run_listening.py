@@ -5,7 +5,7 @@ import time
 import os
 from add_data2db import add_data2db
 
-WORKING_DIR = "/Users/noahparisse/Documents/Paris-digital-lab/P1 RTE/"
+WORKING_DIR = "/Users/tomamirault/Documents/Projects/p1-dty-rte/"
 RASPBERRY_IP = "raspberrypi.local"
 RASPBERRY_USER = "projetrte"
 LOCAL_SCRIPT_PATH = WORKING_DIR + "detection-notes/src/raspberry/pilote_camera_photo.py"
