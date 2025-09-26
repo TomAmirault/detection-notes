@@ -1,4 +1,5 @@
 import cv2
+import numpy as np
 from image_preprocessing import preprocessed_image
 
 # Détection des contours et filtrage des quadrilatères
@@ -7,7 +8,7 @@ from image_preprocessing import preprocessed_image
 def shape_detector(img):
     proc = preprocessed_image(img)
     # Binarisation pour trouver les contours
-    edges = cv2.Canny(proc, 50, 150)
+    edges = cv2.Canny(proc, 30, 100)
 
     # Extraction des contours
     contours, _ = cv2.findContours(
@@ -19,6 +20,20 @@ def shape_detector(img):
         approx = cv2.approxPolyDP(cnt, 0.02 * perimeter, True)
 
         # On ne garde que les quadrilatères assez grands
-        if len(approx) == 4 and cv2.contourArea(cnt) > 2000 and cv2.isContourConvex(approx):
-            valid_shapes.append(approx)
+        if len(approx) == 4 and cv2.contourArea(cnt) > 10000 and cv2.isContourConvex(approx):
+            # Isoler en blanc le quadrilatère
+            mask = np.zeros(img.shape[:2], dtype=np.uint8)
+            cv2.drawContours(mask, [approx], -1, 255, -1)
+
+            # Convertir en HSV
+            hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+            # Moyennes dans le quadrilatère
+            mean_H, mean_S, mean_V, _ = cv2.mean(hsv, mask=mask)
+
+            if mean_V > 150 and mean_S < 60:
+                # V = luminosité (haut = clair)
+                # S = saturation (bas = gris/blanc)
+                valid_shapes.append(approx)
+
     return valid_shapes

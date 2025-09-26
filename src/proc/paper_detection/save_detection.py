@@ -31,26 +31,29 @@ def save_detection(frame, quads):
     if now - last_save_time < COOLDOWN_SEC:
         return
 
-    # Horodatage et sauvegarde
+    # Horodatage
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")[:-3]
+
+    # Sauvegarde du frame complet
     frame_path = os.path.join(OUT_DIR, f"frame_{stamp}.jpg")
     cv2.imwrite(frame_path, frame)
 
-    # Choisir le plus grand quadrilatère
-    areas = [cv2.contourArea(q) for q in quads]
-    biggest = quads[int(np.argmax(areas))]
-    corners = biggest.reshape(4, 2).astype(np.float32)
+    # Sauvegarde de chaque quadrilatère
+    for i, quad in enumerate(quads):
+        corners = quad.reshape(4, 2).astype(np.float32)
 
-    # Correction de perspective
-    corrected = corrected_perspective(frame, corners,
-                                      output_width=2480, output_height=3508)
+        # Correction de perspective
+        corrected = corrected_perspective(frame, corners,
+                                          output_width=1240, output_height=1750)
 
-    # Postprocessing
-    post_corrected = postprocessed_image(corrected)
+        # Postprocessing (il n'est plus utlisé)
+        # post_corrected = postprocessed_image(corrected)
 
-    # Sauvegarde
-    corrected_path = os.path.join(OUT_DIR, f"paper_corrected_{stamp}.jpg")
-    cv2.imwrite(corrected_path, post_corrected)
-    print(f"[SAVE] {frame_path} (+ corrected perspective)")
+        # Sauvegarde
+        corrected_path = os.path.join(
+            OUT_DIR, f"paper_corrected_{stamp}_q{i}.jpg")
+        cv2.imwrite(corrected_path, corrected)
+
+    print(f"[SAVE] {frame_path} (+ {len(quads)} corrected perspectives)")
 
     last_save_time = now

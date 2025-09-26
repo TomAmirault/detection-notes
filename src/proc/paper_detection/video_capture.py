@@ -8,17 +8,27 @@ from image_preprocessing import preprocessed_image
 start = time.time()
 
 # Choix de la caméra
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(1)
 
 # Lancement de la webcam
 while True:
     ret, img = cap.read()
     possible_papers = shape_detector(img)
     img_show = img.copy()
-    # img_show = preprocessed_image(img)
 
     # Dessiner les contours sur l'image originale
     cv2.drawContours(img_show, possible_papers, -1, (0, 255, 0), 2)
+
+    # Infos en overlay
+    cv2.putText(
+        img_show,
+        f"Feuilles detectees: {len(possible_papers)}",
+        (20, 40),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        1,
+        (0, 255, 0) if len(possible_papers) > 0 else (0, 0, 255),
+        2
+    )
 
     # Screenshot lorsqu'il y a détection
     if len(possible_papers) > 0:

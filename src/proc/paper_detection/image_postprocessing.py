@@ -12,7 +12,7 @@ def postprocessed_image(img):
 
     # Amélioration du contraste
     gray = cv2.cvtColor(unsharp, cv2.COLOR_BGR2GRAY)
-    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(4, 4))
     enhanced = clahe.apply(gray)
 
     return enhanced
