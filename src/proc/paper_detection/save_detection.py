@@ -7,7 +7,7 @@ from perspective_corrector import corrected_perspective
 from image_postprocessing import postprocessed_image
 
 # Réglages de sauvegarde
-OUT_DIR = "screenshots"
+OUT_DIR = "src\proc\paper_detection\screenshots"
 os.makedirs(OUT_DIR, exist_ok=True)
 
 # Cooldown
