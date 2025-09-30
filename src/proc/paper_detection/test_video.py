@@ -23,7 +23,10 @@ while True:
     # Détection
     possible_papers = shape_detector(img)
     img_show = img.copy()
-
+    img_show = img.copy()
+    # si tu veux appliquer ton prétraitement
+    img_show = preprocessed_image(img)
+    img_show = cv2.Canny(img_show, 75,  200)
     # Colorier chaque quadrilatère
     colors = [(0, 255, 0), (255, 0, 0), (0, 0, 255), (0, 255, 255)]
     for i, quad in enumerate(possible_papers):
@@ -50,7 +53,7 @@ while True:
 
     # Affichage + sauvegarde
     cv2.imshow("Video", img_show)
-    out.write(img_show)
+    out.write(cv2.cvtColor(img_show, cv2.COLOR_GRAY2BGR))
 
     if cv2.waitKey(30) & 0xFF == ord('q'):
         break

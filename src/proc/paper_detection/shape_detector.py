@@ -8,12 +8,7 @@ from image_preprocessing import preprocessed_image
 def shape_detector(img):
     proc = preprocessed_image(img)
     # Binarisation pour trouver les contours
-    # Canny adaptatif (moins sensible aux variations d’éclairage)
-    sigma = 0.33
-    v = np.median(proc)
-    lower = int(max(0, (1.0 - sigma) * v))
-    upper = int(min(255, (1.0 + sigma) * v))
-    edges = cv2.Canny(proc, lower, upper)
+    edges = cv2.Canny(proc, 75, 200)
 
     # Extraction des contours
     contours, _ = cv2.findContours(
@@ -28,19 +23,6 @@ def shape_detector(img):
 
         # On ne garde que les quadrilatères assez grands
         if len(approx) == 4 and cv2.contourArea(cnt) > 0.05 * h * w and cv2.isContourConvex(approx):
-            # Isoler en blanc le quadrilatère
-            mask = np.zeros((h, w), dtype=np.uint8)
-            cv2.drawContours(mask, [approx], -1, 255, -1)
-
-            # Convertir en HSV
-            hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-
-            # Moyennes dans le quadrilatère
-            mean_H, mean_S, mean_V, _ = cv2.mean(hsv, mask=mask)
-
-            if mean_V > 100 and mean_S < 50:
-                # V = luminosité (haut = clair)
-                # S = saturation (bas = gris/blanc)
-                valid_shapes.append(approx)
+            valid_shapes.append(approx)
 
     return valid_shapes

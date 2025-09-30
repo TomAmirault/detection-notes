@@ -11,20 +11,14 @@ def preprocessed_image(img):
 
     # Amélioration du contraste adaptatif (CLAHE)
     clahe = cv2.createCLAHE(
-        clipLimit=3.0, tileGridSize=(8, 8))
+        clipLimit=2.5, tileGridSize=(8, 8))
     gray = clahe.apply(gray)
 
-    # Réduction du bruit (bilateral filtre = garde mieux les bords)
-    denoised = cv2.bilateralFilter(gray, 9, 75, 75)
+    # Réduction du bruit
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
 
-    # Renforcement des bords (unsharp masking)
-    sharpen = cv2.addWeighted(gray, 1.5, denoised, -0.5, 0)
+    # Fermeture morphologique pour compléter les contours
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (7, 7))
+    closed = cv2.morphologyEx(blurred, cv2.MORPH_CLOSE, kernel, iterations=5)
 
-    # Filtrage morphologique
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-    # Ouverture pour supprimer petits bruits
-    opened = cv2.morphologyEx(sharpen, cv2.MORPH_OPEN, kernel)
-    # Fermeture pour renforcer les contours
-    processed = cv2.morphologyEx(opened, cv2.MORPH_CLOSE, kernel)
-
-    return processed
+    return closed
