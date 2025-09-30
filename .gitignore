@@ -221,3 +221,6 @@ logs/
 
 # Dossiers de transit des images captées par la Raspberry
 tmp/
+
+# Les poids du modèle YOLO
+src/proc/detection_model/
