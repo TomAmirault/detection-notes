@@ -20,4 +20,5 @@ dependencies = [
     "ultralytics>=8.3.203",
     "lap>=0.5.12",
     "pytubefix>=9.5.1",
+    "pot>=0.9.6.post1",
 ]
