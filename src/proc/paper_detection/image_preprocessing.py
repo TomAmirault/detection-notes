@@ -10,6 +10,6 @@ def preprocessed_image(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     # Réduction du bruit
-    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    denoised = cv2.bilateralFilter(gray, d=5, sigmaColor=20, sigmaSpace=20)
 
-    return blurred
+    return denoised

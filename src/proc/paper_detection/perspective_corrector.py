@@ -33,7 +33,7 @@ def get_output_size(corners):
     return max_width, max_height
 
 
-def corrected_perspective(img, corners, output_width, output_height):
+def corrected_perspective(img, corners):
     '''
     Applique une correction de perspective pour redresser la feuille
     '''
