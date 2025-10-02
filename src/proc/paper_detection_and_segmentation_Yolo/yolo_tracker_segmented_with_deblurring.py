@@ -40,6 +40,16 @@ def save_masked_image(result, save_dir, stamp):
             coords = cv2.findNonZero(m_resized)
             if coords is not None:
                 x, y, bw, bh = cv2.boundingRect(coords)
+
+                # Appliquer un dézoom de zoom_out (% du rectangle)
+                margin_w = int(bw * 0.1)
+                margin_h = int(bh * 0.1)
+
+                x = max(0, x - margin_w)
+                y = max(0, y - margin_h)
+                bw = min(w - x, bw + 2 * margin_w)
+                bh = min(h - y, bh + 2 * margin_h)
+                
                 cropped = masked[y:y+bh, x:x+bw]
             else:
                 cropped = masked
