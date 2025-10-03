@@ -232,3 +232,7 @@ src/recog/archives
 # CORRARD: Fichiers tests images et vidéos
 src/proc/paper_detection/test_image.py
 src/proc/paper_detection/test_video.py
+
+# Lbakali:  Tests
+
+test_MLB/
