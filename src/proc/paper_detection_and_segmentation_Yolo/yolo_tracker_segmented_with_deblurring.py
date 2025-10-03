@@ -61,7 +61,7 @@ def save_masked_image(result, save_dir, stamp):
                 cropped = masked
 
             filename_masked = os.path.join(save_dir, f"object_{stamp}_{j}.jpg")
-            cv2.imwrite(filename_masked, cropped)
+            Perspective(cropped, filename_masked)
             return filename_masked
             
             
@@ -86,7 +86,8 @@ try :
                 save_dir_object = os.path.join(BASE_DIR, "../../../tmp")
                 
                 # Sauvegarde masques (au lieu des boxes)
-                save_masked_image(video[best], save_dir_object, stamp)
+                final_filename = save_masked_image(video[best], save_dir_object, stamp)
+                add_data2db(final_filename)  
 
                 video = []      # On réinitialise la sous-vidéo capturée
                 

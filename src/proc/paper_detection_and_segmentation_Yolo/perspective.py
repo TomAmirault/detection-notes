@@ -1,9 +1,7 @@
 import cv2
 import numpy as np
 
-def warpPerspective(image_path, save_path):
-
-    img = cv2.imread(image_path)
+def Perspective(img, save_path):
 
     h, w = img.shape[:2]
     
@@ -51,5 +49,3 @@ def warpPerspective(image_path, save_path):
 
         
         cv2.imwrite(save_path, warped)
-
-        return save_path

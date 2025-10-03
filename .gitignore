@@ -222,3 +222,7 @@ tmp/
 src/proc/detection_model/
 
 data
+
+tests/
+
+src/recog/archives
