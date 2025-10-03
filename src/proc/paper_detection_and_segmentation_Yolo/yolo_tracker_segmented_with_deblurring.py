@@ -8,6 +8,7 @@ from datetime import datetime
 from ultralytics import YOLO
 import os
 from blurry_detection import less_blurred
+from perspective import Perspective
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -24,6 +25,7 @@ video = []
 
 
 def save_masked_image(result, save_dir, stamp):
+    startfunc = time.time()
     orig = result.orig_img
     h, w = orig.shape[:2]
 
@@ -55,16 +57,20 @@ def save_masked_image(result, save_dir, stamp):
                 cropped = masked
 
             filename_masked = os.path.join(save_dir, f"object_{stamp}_{j}.jpg")
-            cv2.imwrite(filename_masked, cropped)
+            Perspective(cropped, filename_masked)
             
+    endfunc = time.time()
+    print(f"Temps d'exécution de save_masked_image : {endfunc - startfunc} secondes")
+            
+
             
 # Lancement de la webcam
 try :
-    for result in model.predict(source = 1, show = True, conf = 0.8, verbose = False, stream = True):
+    for result in model.predict(source = 0, show = True, conf = 0.8, verbose = False, stream = True):
         boxes = result.boxes
         if boxes and len(boxes)>0:      # Si un objet (une feuille de papier) est détectée sur la frame
             if len(video)==0:       # Si aucun objet n'était en cours de capture
-                if time.time()-checkpoint>5:
+                if time.time()-checkpoint>1:
                     checkpoint = time.time()
                     video.append(result)
             elif len(video)<20: # Si un objet est en cours de capture
@@ -78,7 +84,7 @@ try :
                 
                 # Sauvegarde masques (au lieu des boxes)
                 save_masked_image(video[best], save_dir_object, stamp)
-                
+
                 video = []      # On réinitialise la sous-vidéo capturée
                 
         elif len(video)>0:  # Si l'objet a disparu avant la fin de la capture des 20 frames
@@ -86,9 +92,10 @@ try :
             stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
 
             filename_frame = os.path.join(BASE_DIR, "../../../tmp", f"photo_{stamp}.jpg")
-            save_dir_object = os.path.join(BASE_DIR, "../../../tmp")
-            
-            save_masked_image(video[best], save_dir_object, stamp)                             # On enregistre la frame avec la bounding box tracée
+            save_dir_object = os.path.join(BASE_DIR, "../../../tmp")         
+    
+            save_masked_image(video[best], save_dir_object, stamp)  
+
             
             video = []      # On réinitialise la sous-vidéo capturée
 except KeyboardInterrupt :
