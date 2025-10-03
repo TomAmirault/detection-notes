@@ -10,6 +10,11 @@ import os
 from blurry_detection import less_blurred
 from perspective import Perspective
 
+
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
+from src.add_data2db import add_data2db
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Modèle YOLOv8 finetuné sur le dataset https://app.roboflow.com/dty-opi9m/detection-de-feuilles-245oo/1/export
@@ -57,6 +62,7 @@ def save_masked_image(result, save_dir, stamp):
 
             filename_masked = os.path.join(save_dir, f"object_{stamp}_{j}.jpg")
             Perspective(cropped, filename_masked)
+            return filename_masked
             
             
 
@@ -80,7 +86,8 @@ try :
                 save_dir_object = os.path.join(BASE_DIR, "../../../tmp")
                 
                 # Sauvegarde masques (au lieu des boxes)
-                save_masked_image(video[best], save_dir_object, stamp)
+                final_filename = save_masked_image(video[best], save_dir_object, stamp)
+                add_data2db(final_filename)  
 
                 video = []      # On réinitialise la sous-vidéo capturée
                 
@@ -89,10 +96,12 @@ try :
             stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
 
             filename_frame = os.path.join(BASE_DIR, "../../../tmp", f"photo_{stamp}.jpg")
-            save_dir_object = os.path.join(BASE_DIR, "../../../tmp")         
-    
-            save_masked_image(video[best], save_dir_object, stamp)  
-
+            save_dir_object = os.path.join(BASE_DIR, "../../../tmp")
+            
+            final_filename = save_masked_image(video[best], save_dir_object, stamp)      
+            
+            print(f"Photo sauvegardée: {final_filename}")
+            add_data2db(final_filename)                       # On enregistre la frame avec la bounding box tracée
             
             video = []      # On réinitialise la sous-vidéo capturée
 except KeyboardInterrupt :
