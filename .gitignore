@@ -222,3 +222,7 @@ tmp/
 src/proc/detection_model/
 
 data
+
+# CORRARD: Fichiers tests images et vidéos
+src/proc/paper_detection/test_image.py
+src/proc/paper_detection/test_video.py
