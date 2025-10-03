@@ -25,7 +25,6 @@ video = []
 
 
 def save_masked_image(result, save_dir, stamp):
-    startfunc = time.time()
     orig = result.orig_img
     h, w = orig.shape[:2]
 
@@ -59,8 +58,6 @@ def save_masked_image(result, save_dir, stamp):
             filename_masked = os.path.join(save_dir, f"object_{stamp}_{j}.jpg")
             Perspective(cropped, filename_masked)
             
-    endfunc = time.time()
-    print(f"Temps d'exécution de save_masked_image : {endfunc - startfunc} secondes")
             
 
             
