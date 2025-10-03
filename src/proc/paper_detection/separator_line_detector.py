@@ -52,7 +52,7 @@ cv2.destroyAllWindows()
 lines = cv2.HoughLinesP(thick,
                         rho=1,                # résolution en pixels
                         theta=np.pi / 180,    # résolution en radians
-                        threshold=50,        # nb min d’intersections dans l’espace Hough
+                        threshold=30,        # nb min d’intersections dans l’espace Hough
                         # ligne d'au moins la moitié de la largeur
                         minLineLength=gray.shape[1] // 2,
                         maxLineGap=20    # tolérance de "trous" dans la ligne

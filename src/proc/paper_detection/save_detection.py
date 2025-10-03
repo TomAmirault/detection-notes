@@ -10,7 +10,7 @@ OUT_DIR = "src\proc\paper_detection\screenshots"
 os.makedirs(OUT_DIR, exist_ok=True)
 
 # Cooldown
-COOLDOWN_SEC = 0.0   # délai mini entre deux sauvegardes (évite les doublons)
+COOLDOWN_SEC = 5.0   # délai mini entre deux sauvegardes (évite les doublons)
 
 last_save_time = 0.0
 
