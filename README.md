@@ -11,6 +11,7 @@ Le projet combine :
 - Visualisation et recherche via une interface Streamlit
 
 ## Architecture du projet
+'''
 detection-notes/
   src/
     add_data2db.py
@@ -45,6 +46,7 @@ detection-notes/
   uv.lock
   pyproject.toml
   README.md  
+'''
 
 ## Installation
   1. Installe Python 3.10+ et [uv](https://github.com/astral-sh/uv) (ou pip).
