@@ -6,6 +6,8 @@ import time
 import numpy as np
 from datetime import datetime
 
+# Dossier dans lequel est situé le présent fichier
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # --- Hack pour corriger les imports ---
 import sys
@@ -15,7 +17,7 @@ sys.path.append(os.path.abspath(os.path.join(
 
 
 # Réglages de sauvegarde
-OUT_DIR = "/Users/tomamirault/Documents/projects/p1-dty-rte/detection-notes/tmp/paper"
+OUT_DIR = os.path.join(BASE_DIR, "../../../tmp/paper")
 os.makedirs(OUT_DIR, exist_ok=True)
 
 # Cooldown
