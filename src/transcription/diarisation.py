@@ -6,13 +6,13 @@ from sklearn.cluster import KMeans
 import numpy as np
 
 
-def diarization_with_whisper(audio_path, n_clusters=2, model_size="tiny"):
+def diarization_with_whisper(audio_path, n_clusters=2, model_size="tiny", prompt=""):
     
     model = whisper.load_model(model_size)  
 
     audio, sr = librosa.load(audio_path, sr=16000)
     
-    result = model.transcribe(audio_path)
+    result = model.transcribe(audio_path, initial_prompt=prompt)
 
     list_start = []
     list_end = []
