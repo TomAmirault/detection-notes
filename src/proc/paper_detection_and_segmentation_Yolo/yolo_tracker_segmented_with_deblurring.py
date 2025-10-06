@@ -51,14 +51,14 @@ try:
         if boxes and len(boxes) > 0:
             # Un objet (feuille) est détecté
             if len(video) == 0:  # Début d'une séquence
-                if time.time() - checkpoint > 1:  # Attente d’1s entre deux captures
+                if time.time() - checkpoint > 10:  # Attente d’1s entre deux captures
                     checkpoint = time.time()
                     video.append(result)
 
-            elif len(video) < 20:  # Capture en cours
+            elif len(video) < 5:  # Capture en cours
                 video.append(result)
 
-            elif len(video) == 20:  # Séquence terminée
+            elif len(video) == 5:  # Séquence terminée
                 best = less_blurred(video)  # Sélection de la frame la plus nette
                 stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
 
