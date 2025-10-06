@@ -26,4 +26,6 @@ dependencies = [
     "datasets>=4.1.1",
     "jiwer>=4.0.0",
     "gradio>=5.48.0",
+    "sounddevice>=0.5.2",
+    "soundfile>=0.13.1",
 ]
