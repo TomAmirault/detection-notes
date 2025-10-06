@@ -228,6 +228,8 @@ tests/
 
 src/recog/archives
 
+src/recog/test_set/
+
 
 # CORRARD: Fichiers tests images et vidéos
 src/proc/paper_detection/test_image.py
