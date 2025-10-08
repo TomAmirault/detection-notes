@@ -237,6 +237,7 @@ datasets_yolo/
 # CORRARD: Fichiers tests images et vidéos
 src/proc/paper_detection/test_image.py
 src/proc/paper_detection/test_video.py
+src/ner/model_sauvegarde/
 runs/
 
 # CORRARD: NER + DB
