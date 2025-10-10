@@ -12,13 +12,15 @@ from transformers import AutoModelForCTC, Wav2Vec2Processor
 import torch
 import torchaudio
 
+# avoir Python 3.12.11
+
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 model = AutoModelForCTC.from_pretrained("bhuang/asr-wav2vec2-french").to(device)
 processor = Wav2Vec2Processor.from_pretrained("bhuang/asr-wav2vec2-french")
 model_sample_rate = processor.feature_extractor.sampling_rate
 
 
-def diarization_with_whisper(audio_path, num_speakers=None, min_speakers=None, max_speakers=None):
+def diarization_wav2vec2(audio_path, num_speakers=None, min_speakers=None, max_speakers=None):
 
     if num_speakers is not None and (min_speakers is not None or max_speakers is not None):
         raise ValueError("Tu ne peux pas utiliser à la fois 'num_speakers' et ('min_speakers' ou 'max_speakers').")
@@ -33,9 +35,11 @@ def diarization_with_whisper(audio_path, num_speakers=None, min_speakers=None, m
 
     if num_speakers is not None:
         output = pipeline(audio_path, num_speakers=num_speakers)
-    else:
-        output = pipeline(audio_path, min_speakers=min_speakers, max_speakers=max_speakers)
         
+    elif min_speakers is not None or max_speakers is not None:
+        output = pipeline(audio_path, min_speakers=min_speakers, max_speakers=max_speakers)
+    else:
+        output = pipeline(audio_path)
         
     diarization = output.speaker_diarization
 
