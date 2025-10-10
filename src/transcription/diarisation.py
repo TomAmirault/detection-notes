@@ -4,84 +4,125 @@ import whisper
 import librosa
 from sklearn.cluster import KMeans
 import numpy as np
+from pyannote.audio import Pipeline
+import whisper
+from pydub import AudioSegment
+
+from transformers import AutoModelForCTC, Wav2Vec2Processor
+import torch
+import torchaudio
+
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+model = AutoModelForCTC.from_pretrained("bhuang/asr-wav2vec2-french").to(device)
+processor = Wav2Vec2Processor.from_pretrained("bhuang/asr-wav2vec2-french")
+model_sample_rate = processor.feature_extractor.sampling_rate
 
 
-def diarization_with_whisper(audio_path, n_clusters=2, model_size="tiny", prompt=""):
-    """
-    Effectue une diarisation basique (segmentation par locuteur) à partir d'un fichier audio
-    en utilisant le modèle Whisper pour la transcription et des embeddings audio pour le clustering.
+def diarization_with_whisper(audio_path, num_speakers=None, min_speakers=None, max_speakers=None):
 
-    Cette fonction :
-      1. Transcrit l’audio avec Whisper pour obtenir les segments de parole.
-      2. Extrait les embeddings audio de chaque segment à partir du modèle Whisper.
-      3. Applique un clustering K-Means pour regrouper les segments selon leur similarité vocale.
+    if num_speakers is not None and (min_speakers is not None or max_speakers is not None):
+        raise ValueError("Tu ne peux pas utiliser à la fois 'num_speakers' et ('min_speakers' ou 'max_speakers').")
+
     
-    L’objectif est d’obtenir une estimation des différents locuteurs dans le fichier audio.
+    audio = AudioSegment.from_file(audio_path)
 
-    Parameters
-    ----------
-    audio_path : str
-        Chemin du fichier audio à traiter (par ex. "tmp/ia_podcast.wav").
-    n_clusters : int, optional (default=2)
-        Nombre de locuteurs présumés (clusters K-Means).
-    model_size : str, optional (default="tiny")
-        Taille du modèle Whisper à utiliser.  
-        Options : "tiny", "base", "small", "medium", "large".
-    prompt : str, optional (default="")
-        Texte de contexte initial pour améliorer la transcription (prompt initial).
+    pipeline = Pipeline.from_pretrained(
+        "pyannote/speaker-diarization-community-1", 
+        token="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")
 
-    Returns
-    -------
-    list_start : list of float
-        Liste des temps de début (en secondes) de chaque segment.
-    list_end : list of float
-        Liste des temps de fin (en secondes) de chaque segment.
-    list_text : list of str
-        Liste des transcriptions correspondantes à chaque segment.
-    labels : ndarray of int
-        Tableau contenant les étiquettes de cluster (locuteur estimé) pour chaque segment.
-    """
-    model = whisper.load_model(model_size)  
 
-    audio, sr = librosa.load(audio_path, sr=16000)
-    
-    result = model.transcribe(audio_path, initial_prompt=prompt)
+    if num_speakers is not None:
+        output = pipeline(audio_path, num_speakers=num_speakers)
+    else:
+        output = pipeline(audio_path, min_speakers=min_speakers, max_speakers=max_speakers)
+        
+        
+    diarization = output.speaker_diarization
+
 
     list_start = []
     list_end = []
-    list_text = []
-    list_spectrogram = []
+    list_speaker = []
+    i=0
+    for turn, _, speaker in diarization.itertracks(yield_label=True):
 
-    for segment in result["segments"]:
+        list_start.append(turn.start)
+        list_end.append(turn.end)
+        list_speaker.append(speaker)
         
-        start_sec = segment["start"]
-        end_sec = segment["end"]
-        list_start.append(start_sec)
-        list_end.append(end_sec)
-        start_sample = int(start_sec * sr)
-        end_sample = int(end_sec * sr)
-        audio_segment = audio[start_sample:end_sample]
+        if len(list_speaker) == 1:
+            list_speaker.append(speaker)
         
-        list_text.append(segment["text"])
 
-   
-        audio_segment = torch.from_numpy(audio_segment).float()
-        audio_segment = whisper.pad_or_trim(audio_segment)  
+        if list_speaker[-2] != speaker and list_end[-2]-list_start[0] > 1:
+            
+            i=i+1
+            start_time = list_start[0] * 1000   
+            end_time = (list_end[-2]) * 1000  
 
+            segment = audio[start_time:end_time]
 
-        audio_segment = audio_segment.unsqueeze(0) 
-        with torch.no_grad():
-            mel = whisper.log_mel_spectrogram(audio_segment)
-            embeddings = model.encoder(mel)
-        segment_emb = embeddings.mean(dim=1).squeeze(0).numpy()  
-        list_spectrogram.append(segment_emb)
-        
-    X = np.stack(list_spectrogram)
+            segment.export(f"tmp/audio/segment_{i}.wav", format="wav")
+            
+            
+            
+            
+            wav_path =f"tmp/audio/segment_{i}.wav"  # path to your audio file
+            waveform, sample_rate = torchaudio.load(wav_path)
+            waveform = waveform.squeeze(axis=0)  # mono
 
-    kmeans = KMeans(n_clusters=n_clusters, random_state=42)
-    labels = kmeans.fit_predict(X)
+            # resample
+            if sample_rate != model_sample_rate:
+                resampler = torchaudio.transforms.Resample(sample_rate, model_sample_rate)
+                waveform = resampler(waveform)
 
-    return list_start, list_end, list_text, labels
+            # normalize
+            input_dict = processor(waveform, sampling_rate=model_sample_rate, return_tensors="pt")
+
+            with torch.inference_mode():
+                logits = model(input_dict.input_values.to(device)).logits
+
+            # decode
+            predicted_ids = torch.argmax(logits, dim=-1)
+            predicted_sentence = processor.batch_decode(predicted_ids)[0]
+
+            
+            print(f"{list_start[0]:.1f}s - {list_end[-2]:.1f}s : {list_speaker[-2]} : {predicted_sentence}")
+            
+            
+            list_start = [list_start[-1]]
+            list_end = [list_end[-1]]
+            list_speaker = [list_speaker[-1]]
+
+    i=i+1
+    start_time = list_start[0] * 1000   
+    end_time = list_end[-1] * 1000  
+
+    segment = audio[start_time:end_time]
+
+    segment.export(f"tmp/audio/segment_{i}.wav", format="wav")
+
+    wav_path =f"tmp/audio/segment_{i}.wav"  # path to your audio file
+    waveform, sample_rate = torchaudio.load(wav_path)
+    waveform = waveform.squeeze(axis=0)  # mono
+
+    # resample
+    if sample_rate != model_sample_rate:
+        resampler = torchaudio.transforms.Resample(sample_rate, model_sample_rate)
+        waveform = resampler(waveform)
+
+    # normalize
+    input_dict = processor(waveform, sampling_rate=model_sample_rate, return_tensors="pt")
+
+    with torch.inference_mode():
+        logits = model(input_dict.input_values.to(device)).logits
+
+    # decode
+    predicted_ids = torch.argmax(logits, dim=-1)
+    predicted_sentence = processor.batch_decode(predicted_ids)[0]
+
+    print(f"{list_start[0]:.1f}s - {list_end[-1]:.1f}s : {list_speaker[-1]} : {predicted_sentence}")
+
 
 
     
