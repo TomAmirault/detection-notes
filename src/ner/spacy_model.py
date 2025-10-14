@@ -4,7 +4,7 @@ import re
 
 
 # Dictionnaire des abréviations
-DICO_ABREVIATIONS = {
+ABBREVIATIONS_DICT = {
     "RACR": ("Retour à la conduite des réseaux", "operation"),
     "RDCR": ("Retrait de la conduite des réseaux", "operation"),
     "TIR": ("Thermographie infrarouge", "TOOL ACTION"),
@@ -61,6 +61,7 @@ LABEL_GROUPS = {
     "LINE": "INFRASTRUCTURE",
 
     # Contexte opérationnel
+    "operation": "OPERATING_CONTEXT",
     "TOPOLOGY": "OPERATING_CONTEXT",
     "OPERATING CONDITIONS": "OPERATING_CONTEXT",
     "OPERATING MODE": "OPERATING_CONTEXT",
@@ -76,13 +77,13 @@ LABEL_GROUPS = {
 }
 
 
-def regrouper_labels(label):
+def group_labels(label):
     return LABEL_GROUPS.get(label, label)
 
 # Traduction des abréviations
 
 
-def detecter_abreviations(texte):
+def detect_abbreviations(text):
     """
     Détecte toutes les suites de lettres majuscules (abréviations potentielles).
     Retourne une liste de tuples (abréviation, position_début, position_fin).
@@ -90,47 +91,39 @@ def detecter_abreviations(texte):
     # Pattern : au moins 2 lettres majuscules consécutives (et tiret possible)
     pattern = r'\b[A-ZÀÂÄÇÉÈÊËÏÎÔÙÛÜŸ]+(?:-[A-ZÀÂÄÇÉÈÊËÏÎÔÙÛÜŸ]+)*\b'
 
-    abreviations_trouvees = []
-    for match in re.finditer(pattern, texte):
-        abreviations_trouvees.append(
+    found_abbreviations = []
+    for match in re.finditer(pattern, text):
+        found_abbreviations.append(
             (match.group(0), match.start(), match.end()))
-    return abreviations_trouvees
+    return found_abbreviations
 
 
-def traduire_abreviations(texte, dico=DICO_ABREVIATIONS):
+def translate_abbreviations(text, abbr_dict=ABBREVIATIONS_DICT):
     """
     Traduit toutes les abréviations MAJUSCULES trouvées dans le texte.
-    Retourne le texte traduit et une liste de traductions effectuées.
+    Retourne le texte traduit.
     """
     # Pattern robuste pour abréviations majuscules avec tirets ou slash
     pattern = r'\b[A-ZÀÂÄÇÉÈÊËÏÎÔÙÛÜŸ]+(?:[-/][A-ZÀÂÄÇÉÈÊËÏÎÔÙÛÜŸ]+)*\b'
 
-    matches = list(re.finditer(pattern, texte))
+    matches = list(re.finditer(pattern, text))
 
     # Tri décroissant pour éviter les problèmes de déplacement d'index
     matches = sorted(matches, key=lambda m: m.start(), reverse=True)
 
-    texte_traduit = texte
-    traductions_effectuees = []
+    translated_text = text
 
     for m in matches:
-        abrev = m.group(0)
+        abbr = m.group(0)
         start, end = m.start(), m.end()
 
-        if abrev in dico:
-            traduction, _ = dico[abrev]
+        if abbr in abbr_dict:
+            translation, _ = abbr_dict[abbr]
 
-            texte_traduit = texte_traduit[:start] + \
-                traduction + texte_traduit[end:]
+            translated_text = translated_text[:start] + \
+                translation + translated_text[end:]
 
-            traductions_effectuees.append({
-                "original": abrev,
-                "traduction": traduction,
-                "position": start
-            })
-
-    traductions_effectuees.reverse()
-    return texte_traduit, traductions_effectuees
+    return translated_text
 
 
 # Model
@@ -142,9 +135,10 @@ ruler = nlp.add_pipe("entity_ruler", after="ner",
 
 patterns = []
 
-for (traduction_abrev, original_labels) in DICO_ABREVIATIONS.values():
-    grouped_label = regrouper_labels(original_labels)
-    patterns.append({"label": grouped_label, "pattern": traduction_abrev})
+for (abbr_translation, original_labels) in ABBREVIATIONS_DICT.values():
+    grouped_label = group_labels(original_labels)
+    patterns.append({"label": grouped_label, "pattern": abbr_translation})
+
 
 # Ajout de Regex dans l'EntityRuler
 # Téléphone
@@ -222,14 +216,14 @@ patterns += [
 ]
 
 # Lignes Ville–Ville
-ville = r"[A-ZÉÈÎÏÀÂÙÛÜŸ][a-zàâçéèêëîïôûùüÿ\-]+"
+city = r"[A-ZÉÈÎÏÀÂÙÛÜŸ][a-zàâçéèêëîïôûùüÿ\-]+"
 patterns += [
     {
         "label": "GEO",
         "pattern": [
-            {"TEXT": {"REGEX": f"^{ville}$"}},
+            {"TEXT": {"REGEX": f"^{city}$"}},
             {"TEXT": "-"},
-            {"TEXT": {"REGEX": f"^{ville}$"}}
+            {"TEXT": {"REGEX": f"^{city}$"}}
         ]
     }
 ]
@@ -239,33 +233,32 @@ ruler.add_patterns(patterns)
 # Extraction d'entités
 
 
-def extraire_entites(texte, dico=DICO_ABREVIATIONS):
+def extract_entities(text, abbr_dict=ABBREVIATIONS_DICT):
     """
     Pipeline complet : traduction des abréviations + extraction d'entités avec spaCy.
     """
     # Extraction des entités nommées par spaCy
-    texte_traduit, traductions = traduire_abreviations(texte, dico)
-    doc = nlp(texte_traduit)
+    translated_text = translate_abbreviations(text, abbr_dict)
+    doc = nlp(translated_text)
 
-    resultats = {
-        "texte_original": texte,
-        "texte_traduit": texte_traduit,
-        "traductions": traductions,
-        "entites": {}
+    results = {
+        "original_text": text,
+        "translated_text": translated_text,
+        "entities": {}
     }
 
     for ent in doc.ents:
-        label_regroupe = regrouper_labels(ent.label_)
-        resultats["entites"].setdefault(label_regroupe, []).append(ent.text)
+        grouped_label = group_labels(ent.label_)
+        results["entities"].setdefault(grouped_label, []).append(ent.text)
 
     # Dédoublonner
-    for key in resultats["entites"]:
-        resultats["entites"][key] = list(set(resultats["entites"][key]))
+    for key in results["entities"]:
+        results["entities"][key] = list(set(results["entities"][key]))
 
-    return resultats
+    return results
 
 
 if __name__ == "__main__":
-    texte = "Appeler Enedis au 07 28 39 83 23: incident au niveau du N-1 de Charles - Trappes."
-    resultats = extraire_entites(texte)
-    print(resultats)
+    text = "Appeler Enedis au 07 28 39 83 23 pour RACR: incident au niveau du N-1 de Charles - Trappes."
+    results = extract_entities(text)
+    print(results)

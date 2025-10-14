@@ -49,16 +49,14 @@ def same_event(text1, text2, entity_types=None, similarity_threshold=60, proport
     return common_count >= min_common, common_count, min_common
 
 
-# text1 = "Coupure au niveau de la ligne Charles-Trappe à 14h: contacter le PDM."
-# text2 = "MNV réalisé par le PDM sur le N-1 entre Paris et Marseille vers 14:00."
+text1 = "Coupure au niveau de la ligne Charles-Trappe à 14h: contacter le PDM."
+text2 = "MNV réalisé par le PDM sur le N-1 entre Paris et Marseille vers 14:00."
 
-# result, common_count, min_required = same_event(
-#     text1, text2, entity_types=None, similarity_threshold=50, proportion=0.75)
+result, common_count, min_required = same_event(
+    text1, text2, entity_types=None, similarity_threshold=50, proportion=0.75)
 
-# print(extraire_entites(text1)["entites"])
-# print(extraire_entites(text2)["entites"])
-# print(result)
-# print(common_count)
-# print(min_required)
-
-print(entity_similarity("14h", "14:00"))
+print(extraire_entites(text1)["entites"])
+print(extraire_entites(text2)["entites"])
+print(result)
+print(common_count)
+print(min_required)
