@@ -1,14 +1,14 @@
-from spacy_model import extraire_entites
+from spacy_model import extract_entities
 from rapidfuzz import fuzz
 
 
 def entity_similarity(a, b, threshold=60):
-    return fuzz.ratio(a, b)  # >= threshold
+    return fuzz.ratio(a, b) >= threshold
 
 
 def count_common_entities(text1, text2, entity_types=None, similarity_threshold=60):
-    entities1 = extraire_entites(text1)["entites"]
-    entities2 = extraire_entites(text2)["entites"]
+    entities1 = extract_entities(text1)["entities"]
+    entities2 = extract_entities(text2)["entities"]
 
     common_count = 0
 
@@ -28,7 +28,7 @@ def count_common_entities(text1, text2, entity_types=None, similarity_threshold=
 
 
 def total_entities_count(text, entity_types=None):
-    entities = extraire_entites(text)["entites"]
+    entities = extract_entities(text)["entities"]
     if entity_types:
         return sum(len(entities.get(t, [])) for t in entity_types)
     else:
@@ -55,8 +55,8 @@ text2 = "MNV réalisé par le PDM sur le N-1 entre Paris et Marseille vers 14:00
 result, common_count, min_required = same_event(
     text1, text2, entity_types=None, similarity_threshold=50, proportion=0.75)
 
-print(extraire_entites(text1)["entites"])
-print(extraire_entites(text2)["entites"])
+print(extract_entities(text1)["entities"])
+print(extract_entities(text2)["entities"])
 print(result)
 print(common_count)
 print(min_required)
