@@ -32,4 +32,5 @@ dependencies = [
     "seqeval>=1.2.2",
     "torch>=2.8.0",
     "pyzbar>=0.1.9",
+    "spacy>=3.8.7",
 ]
