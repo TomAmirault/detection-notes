@@ -38,6 +38,13 @@ def transcribe_audio(audio_path, model_size="tiny", prompt=""):
 
 
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+model = AutoModelForCTC.from_pretrained("bhuang/asr-wav2vec2-french").to(device)
+processor = Wav2Vec2Processor.from_pretrained("bhuang/asr-wav2vec2-french")
+model_sample_rate = processor.feature_extractor.sampling_rate
+
+
 def transcribe_w2v2(audio_path):
     """
     Transcrit un fichier audio en texte à l’aide d’un modèle Whisper.
@@ -64,12 +71,6 @@ def transcribe_w2v2(audio_path):
     str
         Le texte transcrit à partir de l’audio.
     """
-
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-    model = AutoModelForCTC.from_pretrained("bhuang/asr-wav2vec2-french").to(device)
-    processor = Wav2Vec2Processor.from_pretrained("bhuang/asr-wav2vec2-french")
-    model_sample_rate = processor.feature_extractor.sampling_rate
 
     wav_path = audio_path
     waveform, sample_rate = torchaudio.load(wav_path)
