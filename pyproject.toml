@@ -36,4 +36,5 @@ dependencies = [
     "huggingface-hub>=0.35.3",
     "pyannote-audio>=4.0.1",
     "librosa>=0.11.0",
+    "spacy>=3.8.7",
 ]

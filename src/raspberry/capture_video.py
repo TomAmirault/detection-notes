@@ -8,8 +8,8 @@ picam2.start()
 
 # Durée en secondes
 duration = 20
-output_file = "/home/projetrte/Documents/video.h264"
-mp4_file = "/home/projetrte/Documents/video.mp4"
+output_file = "/home/projetrte/Documents/sampleH264/video.h264"
+mp4_file = "/home/projetrte/Documents/sampleMP4/video.mp4"
 encoder = H264Encoder(bitrate=10000000)
 picam2.start_recording(encoder, output_file)  # démarrer l’enregistrement
 time.sleep(duration)                  # attendre la durée

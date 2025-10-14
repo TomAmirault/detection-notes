@@ -1,11 +1,10 @@
+# Détection des contours et filtrage: seuls les quadrilatères "blancs" sont gardés
 import cv2
 import numpy as np
 from image_preprocessing import preprocessed_image
 
-# Détection des contours et filtrage des quadrilatères
 
-
-def shape_detector(img):
+def shape_detector(img: np.ndarray) -> list:
     proc = preprocessed_image(img)
     h, w = img.shape[:2]
 
