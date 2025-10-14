@@ -7,7 +7,8 @@ from datetime import datetime
 from ultralytics import YOLO
 import os
 from blurry_detection import less_blurred
-from segmentation import crop_image_around_object
+# from segmentation import crop_image_around_object
+from segmentation_threshold import crop_image_around_object
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -38,13 +39,12 @@ try :
                 stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
 
                 # filename_frame = os.path.join(BASE_DIR, "../../../tmp", f"photo_{stamp}.jpg")
-                # save_dir_object = os.path.join(BASE_DIR, "../../../tmp")
+                save_dir_object = os.path.join(BASE_DIR, "../../../tmp")
                 # video[best].save_crop(save_dir_object, file_name = f"object_{stamp}.jpg")    # On enregistre la bounding box en tant qu'image
                 # video[best].save_txt(os.path.join(save_dir_object, f"output_{stamp}.txt"))
                 # cv2.imwrite(filename_frame, video[best].orig_img)                              # On enregistre la frame avec la bounding box tracée
                 
                 x, y, w, h = video[best].boxes.xywh[0]
-                # print("x, y, w, h :", x, y, w, h)
                 box_x_left = int(x-0.5*w)
                 box_y_top = int(y-0.5*h)
                 rect = (box_x_left, box_y_top, int(w), int(h))
