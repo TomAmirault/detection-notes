@@ -47,3 +47,13 @@ def shape_detector(img):
                 valid_shapes.append(approx)
 
     return valid_shapes
+
+def get_mask(img):
+    h, w = img.shape[:2]
+    mask = np.zeros((h, w), dtype=np.uint8)
+
+    possible_papers = shape_detector(img)
+    if len(possible_papers) > 0:
+        cv2.drawContours(mask, possible_papers, -1, 255, thickness=cv2.FILLED)
+
+    return mask

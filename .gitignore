@@ -232,6 +232,7 @@ src/recog/archives
 # PARISSE
 src/recog/test_set/
 datasets_yolo/
+src/proc/paper_detection/benchmark/data
 
 
 # CORRARD: Fichiers tests images et vidéos
