@@ -4,7 +4,8 @@ import numpy as np
 import noisereduce as nr
 from datetime import datetime
 import os
-
+from denoise import denoise_audio
+from normalize import normalize_volume
 
 def record_loop(duration=10, bruit_reduction=True):
     """

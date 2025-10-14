@@ -11,7 +11,6 @@ dependencies = [
     "opencv-python>=4.10.0",
     "numpy>=2.2.6",
     "streamlit>=1.50.0",
-    "openai-whisper",
     "paramiko>=4.0.0",
     "scp>=0.15.0",
     "openai-whisper",
@@ -32,5 +31,9 @@ dependencies = [
     "seqeval>=1.2.2",
     "torch>=2.8.0",
     "pyzbar>=0.1.9",
-    "scikit-learn>=1.7.2",
+    "noisereduce>=3.0.3",
+    "torchaudio>=2.8.0",
+    "huggingface-hub>=0.35.3",
+    "pyannote-audio>=4.0.1",
+    "librosa>=0.11.0",
 ]

@@ -12,7 +12,7 @@ Fonctionnement :
 Arrêt du programme :
     - Ctrl+C (KeyboardInterrupt)
 """
-
+#python3 yolo_tracker_segmented_with_deblurring.py
 import os
 import sys
 import time
@@ -51,21 +51,21 @@ try:
         if boxes and len(boxes) > 0:
             # Un objet (feuille) est détecté
             if len(video) == 0:  # Début d'une séquence
-                if time.time() - checkpoint > 10:  # Attente d’1s entre deux captures
+                if time.time() - checkpoint > 5:  # Attente d’1s entre deux captures
                     checkpoint = time.time()
                     video.append(result)
 
-            elif len(video) < 5:  # Capture en cours
+            elif len(video) < 20:  # Capture en cours
                 video.append(result)
 
-            elif len(video) == 5:  # Séquence terminée
+            elif len(video) == 20:  # Séquence terminée
                 best = less_blurred(video)  # Sélection de la frame la plus nette
                 stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
 
                 save_dir = os.path.join(BASE_DIR, "../../../tmp")
                 final_filename = save_masked_image(video[best], save_dir, stamp)
 
-                add_data2db(final_filename)  # Sauvegarde dans la base
+                #add_data2db(final_filename)  # Sauvegarde dans la base
                 video = []  # Réinitialisation
 
         elif len(video) > 0:
@@ -76,11 +76,11 @@ try:
             save_dir = os.path.join(BASE_DIR, "../../../tmp")
             final_filename = save_masked_image(video[best], save_dir, stamp)
 
-            add_data2db(final_filename)
-
+            #add_data2db(final_filename)
             video = []  # Réinitialisation
 
 except KeyboardInterrupt:
     print("Arrêt demandé par l'utilisateur.")
 finally:
     print("Fin.")
+
