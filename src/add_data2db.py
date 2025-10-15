@@ -109,3 +109,10 @@ def add_data2db(image_path: str, db_path: str = DB_PATH):
     return meta_id
 
 
+import os
+folder = "/Users/tomamirault/Documents/projects/p1-dty-rte/vertical-attention-network-for-handwritten-text-recognition/data/raw"
+for filename in os.listdir(folder):
+    if filename.lower().endswith(('jpg')):
+        image_path = os.path.join(folder, filename)
+        add_data2db(image_path)
+
