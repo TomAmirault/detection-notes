@@ -5,12 +5,20 @@ import cv2
 import time
 from datetime import datetime
 from ultralytics import YOLO
-import os
+import os, sys
 from blurry_detection import less_blurred
 # from segmentation import crop_image_around_object
 from segmentation_threshold import crop_image_around_object, get_binary_image_of_text
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+sys.path.append(os.path.join(BASE_DIR,"../../"))
+
+print(sys.path)
+
+from add_data2db import add_data2db
+
+
 
 # Modèle YOLOv11 finetuné sur le dataset https://universe.roboflow.com/dty-opi9m/detection-de-feuilles-245oo
 model_path = os.path.join(BASE_DIR, '../detection_model/best-detect.pt')
@@ -52,13 +60,16 @@ try :
                 # print("shape :", result.orig_img.shape)
 
                 processed = crop_image_around_object(video[best].orig_img, rect)
-                thresholded = get_binary_image_of_text(video[best].orig_img, rect)
-                filename_frame = os.path.join(BASE_DIR, "../../../tmp/paper", f"paper_{stamp}.jpg")
+                # thresholded = get_binary_image_of_text(video[best].orig_img, rect)
+                # filename_frame = os.path.join(BASE_DIR, "../../../tmp/paper", f"paper_{stamp}.jpg")
                 filename_frame2 = os.path.join(BASE_DIR, "../../../tmp/paper", f"paper_processed_{stamp}.jpg")
                 cv2.imwrite(filename_frame2, processed)   
-                cv2.imwrite(filename_frame, thresholded) 
+                # cv2.imwrite(filename_frame, thresholded) 
+
+                add_data2db(filename_frame2)  # On ajoute l'image rognée à la base de données
 
                 video = []      # On réinitialise la sous-vidéo capturée
+
                 
         elif len(video)>0:  # Si l'objet a disparu avant la fin de la capture des 20 frames
             best = less_blurred(video)  # Indice de la frame la moins floue
@@ -75,10 +86,12 @@ try :
             rect = (box_x_left, box_y_top, int(w), int(h))
 
             processed = crop_image_around_object(video[best].orig_img, rect)
-            thresholded = get_binary_image_of_text(video[best].orig_img, rect)
+            # thresholded = get_binary_image_of_text(video[best].orig_img, rect)
             cv2.imwrite(filename_frame2, processed)   
-            cv2.imwrite(filename_frame, thresholded)                              # On enregistre la frame avec la bounding box tracée
+            # cv2.imwrite(filename_frame, thresholded)                              # On enregistre la frame avec la bounding box tracée
             
+            add_data2db(filename_frame2)  # On ajoute l'image rognée à la base de données
+
             video = []      # On réinitialise la sous-vidéo capturée
 except KeyboardInterrupt :
     print("Arrêt demandé par l'utilisateur.")
