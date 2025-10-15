@@ -99,6 +99,7 @@ with st.sidebar:
     if st.button("Rafraîchir maintenant"):
         st.rerun()
 
+
 # Auto-refresh léger
 if REFRESH_SECONDS > 0:
     st.experimental_set_query_params(_=int(time.time() // REFRESH_SECONDS))
@@ -108,6 +109,11 @@ notes = fetch_notes(limit=limit, ts_from=ts_from, ts_to=ts_to, q=q)
 
 # Bandeau résumé
 st.markdown(f"**{len(notes)}** notes affichées")
+
+st.markdown(
+    "<h1 style='text-align: center; color: #E74C3C;'>Analyse des Notes</h1>",
+    unsafe_allow_html=True
+)
 
 # Barre latérale (filtre)
 with st.sidebar:
@@ -161,6 +167,66 @@ for n in notes:
                 st.image(img, caption=os.path.basename(img), use_column_width=True)
             else:
                 st.caption(f"Image non disponible: {img_path}")
+                
+                
+    #--------------------------Audio----------------------#
+st.markdown(
+    "<h1 style='text-align: center; color: #E74C3C;'>Analyse des Audios</h1>",
+    unsafe_allow_html=True
+)
+tmp_dir = os.path.join("src/transcription/tmp")
+audio_json_path = os.path.join(tmp_dir, "transcriptions_log.json")
+
+# 1. Charger la liste des audios depuis le JSON
+notes_audio = []
+if os.path.exists(audio_json_path):
+    with open(audio_json_path, "r") as f:
+        data = json.load(f)
+        # Chaque entrée du JSON devient une "note"
+        for item in data:
+            filename = item.get("filename", "")
+            full_path = os.path.join(tmp_dir, filename)
+            if os.path.exists(full_path):
+                notes_audio.append({
+                    "id": os.path.splitext(filename)[0],
+                    "ts": item.get("start_time", ""),
+                    "audio_path": full_path,
+                    "transcription_audio_brute": item.get("transcription", "—"),
+                    "transcription_audio_clean": item.get("transcription", "—"),
+                    "commentaire_audio": "",
+                })
+else:
+    st.warning(f"Aucun fichier JSON trouvé à {audio_json_path}")
+
+# 2. Affichage des audios sous forme de cartes
+for n in notes_audio:
+    st.markdown("---")
+    header_cols = st.columns([1, 4, 2])
+    
+    with header_cols[0]:
+        st.markdown(f"**ID**: {n['id']}")
+        st.markdown(f"**TS**: {n['ts']}")
+    
+    with header_cols[1]:
+        st.markdown("**Transcription brute (audio)**")
+        st.markdown(f"```\n{n.get('transcription_audio_brute') or '—'}\n```")
+
+        st.markdown("**Transcription clean (audio)**")
+        st.markdown(f"```\n{n.get('transcription_audio_clean') or '—'}\n```")
+
+        st.markdown("**Commentaires audio**")
+        st.markdown(f"```\n{n.get('commentaire_audio') or '—'}\n```")
+
+    with header_cols[2]:
+        audio_path = n.get("audio_path")
+        if audio_path and os.path.exists(audio_path):
+            st.audio(audio_path, format="audio/wav")
+            st.caption(os.path.basename(audio_path))
+        else:
+            st.caption("Pas d’audio disponible")
+    #------------------------------------------------------#
+    
+    
     
     # ----- Actions -----
     st.markdown("**Actions**")

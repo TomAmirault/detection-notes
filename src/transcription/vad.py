@@ -20,6 +20,12 @@ def VAD(audio_path, min_duration_on=2, min_duration_of=2):
     }
     pipeline.instantiate(HYPER_PARAMETERS)
     vad = pipeline(audio_path)
-
+    segment_start = []
+    segment_end = []
     for segment, _, _ in vad.itertracks(yield_label=True):
-        print(segment)
+        #print(segment)
+        segment_start.append(segment.start)
+        segment_end.append(segment.end)
+        
+    return segment_start,segment_end
+
