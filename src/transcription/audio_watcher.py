@@ -19,8 +19,8 @@ import warnings
 warnings.filterwarnings("ignore")
 
 min_duration_on_choice = 3
-min_duration_off_choice = 10
-
+min_duration_off_choice = 2
+prompt = "Abréviations officielles (ne pas développer ; corrige variantes proches vers la forme officielle): SNCF, ABC, RSD, TIR, PF, GEH, SMACC, COSE, TRX, VPL, MNV, N-1, COSE-P"
 
 if __name__ == "__main__":
     try:
@@ -74,7 +74,7 @@ if __name__ == "__main__":
                 
             for audio_path in folder_tmp.glob("*.wav"): 
                 try:
-                    res = transcribe_whisper_clean(audio_path)
+                    res = transcribe_whisper_clean(audio_path, prompt)
                     if not res:
                         # transcribe returned None -> already transcribed or skipped
                         continue
@@ -96,7 +96,7 @@ if __name__ == "__main__":
         VADe(audio_path, min_duration_on_choice, min_duration_off_choice)
         
     for audio_path in folder_tmp.glob("*.wav"): 
-        transcribe_whisper_clean(audio_path) 
+        transcribe_whisper_clean(audio_path, prompt) 
     print("Fin.")
 
 
