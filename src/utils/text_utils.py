@@ -4,6 +4,7 @@ from typing import Any, List, Optional, Tuple, Dict
 from difflib import SequenceMatcher
 from collections import Counter
 
+
 def has_meaningful_line(s: str) -> bool:
     """
     Retourne True si au moins une ligne de s contient une lettre (y compris accentuée) ou un chiffre.
@@ -12,6 +13,7 @@ def has_meaningful_line(s: str) -> bool:
         if re.search(r"[A-Za-zÀ-ÿ0-9]", ln):
             return True
     return False
+
 
 def has_meaningful_text(s: str) -> bool:
     """
@@ -27,7 +29,8 @@ def _normalize_for_similarity(s: str) -> str:
     s = s.strip().lower()
 
     # Normalise les tirets et espaces autour des signes - : ; , .
-    s = re.sub(r"\s*[-–—]\s*", "-", s)       # "Caen - Cherbourg" -> "caen-cherbourg"
+    # "Caen - Cherbourg" -> "caen-cherbourg"
+    s = re.sub(r"\s*[-–—]\s*", "-", s)
     s = re.sub(r"\s*:\s*", ":", s)
     s = re.sub(r"\s*;\s*", ";", s)
     s = re.sub(r"\s*,\s*", ",", s)
@@ -37,10 +40,12 @@ def _normalize_for_similarity(s: str) -> str:
     s = re.sub(r"\s+", " ", s)
     return s
 
+
 def _similarity(a: str, b: str) -> float:
     return SequenceMatcher(None, _normalize_for_similarity(a), _normalize_for_similarity(b)).ratio()
 
-def _align_block(old_block: List[str], new_block: List[str]) -> Tuple[List[Tuple[int,int,float]], List[int], List[int]]:
+
+def _align_block(old_block: List[str], new_block: List[str]) -> Tuple[List[Tuple[int, int, float]], List[int], List[int]]:
     """
     Aligne un bloc old_block (indexés par i) et new_block (indexés par j) par similarité.
     Retourne:
@@ -72,8 +77,10 @@ def _align_block(old_block: List[str], new_block: List[str]) -> Tuple[List[Tuple
     old_unmatched = [i for i in range(len(old_block)) if i not in matched_old]
     new_unmatched = [j for j in range(len(new_block)) if j not in matched_new]
     # tri par indices croissants pour stabilité
-    matches.sort(key=lambda t: (t[1], t[0]), reverse=False)  # principalement par j (ordre des nouvelles lignes)
+    # principalement par j (ordre des nouvelles lignes)
+    matches.sort(key=lambda t: (t[1], t[0]), reverse=False)
     return matches, old_unmatched, new_unmatched
+
 
 def compute_diff(old_text: str,
                  new_text: str,
@@ -107,7 +114,8 @@ def compute_diff(old_text: str,
 
         if tag in ("replace", "insert", "delete"):
             # Aligne intelligemment, même si tailles identiques
-            matches, old_unmatched, new_unmatched = _align_block(old_block, new_block)
+            matches, old_unmatched, new_unmatched = _align_block(
+                old_block, new_block)
 
             # 1) REPLACE (pour les paires appariées)
             for i_rel, j_rel, sim in matches:
@@ -152,7 +160,8 @@ def compute_diff(old_text: str,
                 if not old_content.strip():
                     continue
                 old_abs_line = i1 + i_rel + 1
-                human_rows.append(f"- Ancienne ligne {old_abs_line}. {old_content}")
+                human_rows.append(
+                    f"- Ancienne ligne {old_abs_line}. {old_content}")
                 diff_json.append({
                     "type": "delete",
                     "old_line": old_abs_line,
@@ -176,6 +185,7 @@ def _max_consecutive_run(tokens):
             prev = t
     return max_run
 
+
 def is_htr_buggy(ocr_text: str, cleaned_text: str = "") -> (bool, str):
     """
     Retourne (is_buggy, reason). Heuristiques pour détecter un bug OCR/HTR (répétitions absurdes).
@@ -185,7 +195,7 @@ def is_htr_buggy(ocr_text: str, cleaned_text: str = "") -> (bool, str):
 
     # Tokens & lignes
     tokens = re.findall(r"[A-Za-zÀ-ÖØ-öø-ÿ0-9]+", ocr_text.lower())
-    lines   = [ln.strip().lower() for ln in ocr_text.splitlines() if ln.strip()]
+    lines = [ln.strip().lower() for ln in ocr_text.splitlines() if ln.strip()]
 
     if len(tokens) < 5:
         # Très court → on laisse passer (c’est souvent une vraie petite note)
@@ -194,10 +204,11 @@ def is_htr_buggy(ocr_text: str, cleaned_text: str = "") -> (bool, str):
     N = len(tokens)
     cnt = Counter(tokens)
     top_word, top_freq = cnt.most_common(1)[0]
-    dom_ratio   = top_freq / N                    # part du mot le plus fréquent
-    uniq_ratio  = len(cnt) / N                    # diversité de tokens
-    run_max     = _max_consecutive_run(tokens)    # plus longue répétition consécutive
-    chars       = "".join(tokens)
+    dom_ratio = top_freq / N                    # part du mot le plus fréquent
+    uniq_ratio = len(cnt) / N                    # diversité de tokens
+    # plus longue répétition consécutive
+    run_max = _max_consecutive_run(tokens)
+    chars = "".join(tokens)
     char_divers = len(set(chars)) / max(1, len(chars))
 
     # Lignes identiques
@@ -221,3 +232,26 @@ def is_htr_buggy(ocr_text: str, cleaned_text: str = "") -> (bool, str):
         return True, "cleaned_text vide et OCR répétitif"
 
     return False, ""
+
+
+def clean_added_text_for_ner(text: str) -> str:
+    cleaned_lines = []
+    for line in text.splitlines():
+        line = line.strip()
+
+        # Ignore complètement les lignes supprimées
+        if re.match(r"^\-\s*Ancienne\s+ligne\s+\d+\.", line, flags=re.IGNORECASE):
+            continue
+
+        # Supprime uniquement le préfixe des lignes ajoutées
+        new_line = re.sub(
+            r"^\+\s*Ligne\s+\d+\.\s*",
+            "",
+            line,
+            flags=re.IGNORECASE
+        ).strip()
+
+        if new_line:
+            cleaned_lines.append(new_line)
+
+    return "\n".join(cleaned_lines)

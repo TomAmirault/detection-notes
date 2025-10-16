@@ -9,7 +9,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # fmt: off
 # isort: skip
-from src.recog.mistral_ocr_llm import image_transcription
+from src.processing.mistral_ocr_llm import image_transcription
 from src.backend.db import (
     DB_PATH,
     insert_note_meta,
@@ -21,32 +21,9 @@ from ner.spacy_model import extract_entities
 # fmt on  
 
 
-from src.utils.text_utils import has_meaningful_line, has_meaningful_text, compute_diff, is_htr_buggy
+from src.utils.text_utils import has_meaningful_line, has_meaningful_text, compute_diff, is_htr_buggy, clean_added_text_for_ner
 
 from src.utils.image_utils import encode_image
-
-
-def clean_added_text_for_ner(text: str) -> str:
-    cleaned_lines = []
-    for line in text.splitlines():
-        line = line.strip()
-
-        # Ignore complètement les lignes supprimées
-        if re.match(r"^\-\s*Ancienne\s+ligne\s+\d+\.", line, flags=re.IGNORECASE):
-            continue
-
-        # Supprime uniquement le préfixe des lignes ajoutées
-        new_line = re.sub(
-            r"^\+\s*Ligne\s+\d+\.\s*",
-            "",
-            line,
-            flags=re.IGNORECASE
-        ).strip()
-
-        if new_line:
-            cleaned_lines.append(new_line)
-
-    return "\n".join(cleaned_lines)
 
 
 def add_data2db(image_path: str, db_path: str = DB_PATH):
