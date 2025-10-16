@@ -1,16 +1,24 @@
+
+print("Chargement des Modèles")
+
 from vad import VADe
 from enregistrement import record_loop
 from transcribe import transcribe_w2v2_clean
 import threading
 import os
 from pathlib import Path
+import warnings
+warnings.filterwarnings("ignore")
+
+print("Modèles Prêts")
 
 
 if __name__ == "__main__":
     try:
-        record_duration = 5
+        record_duration = 50
         stop_event = threading.Event()
-        enregistrement_thread = threading.Thread(target = record_loop, args=(record_duration, stop_event))
+        device_index = 0
+        enregistrement_thread = threading.Thread(target = record_loop, args=(record_duration, stop_event, device_index))
         enregistrement_thread.start()
         
         folder_tmp = Path("src/transcription/tmp")
@@ -19,7 +27,7 @@ if __name__ == "__main__":
         while True:
             
             for audio_path in folder_tests.glob("*.wav"): 
-                VADe(audio_path, min_duration_on=1, min_duration_off=2)
+                VADe(audio_path, min_duration_on=2, min_duration_off=5)
                 
             for audio_path in folder_tmp.glob("*.wav"): 
                 transcribe_w2v2_clean(audio_path)  
@@ -34,9 +42,10 @@ if __name__ == "__main__":
     enregistrement_thread.join()
     
     for audio_path in folder_tests.glob("*.wav"): 
-        VADe(audio_path, min_duration_on=1, min_duration_off=2)
+        VADe(audio_path, min_duration_on=2, min_duration_off=5)
         
     for audio_path in folder_tmp.glob("*.wav"): 
         transcribe_w2v2_clean(audio_path) 
     print("Fin.")
-    
+
+

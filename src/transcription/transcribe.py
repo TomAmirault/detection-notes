@@ -85,4 +85,4 @@ if __name__ == "__main__":
     folder = Path("src/transcription/tmp")
     for audio_path in folder.glob("*.wav"): 
         print(audio_path)
-        transcribe_w2v2_clean(audio_path)    
+        transcribe_w2v2_clean(audio_path)
