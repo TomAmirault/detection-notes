@@ -1,11 +1,22 @@
-import os, json, sqlite3, time
+import os
+import json
+import sqlite3
+import time
+import sys
 from typing import Optional, List, Dict, Tuple
 from difflib import SequenceMatcher
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# fmt: off
+# isort: skip
+from ner.compare_entities import same_event
+# fmt: on
 
 DB_PATH = os.environ.get("RTE_DB_PATH", "data/db/notes.sqlite")
 
+
 def _resolve_db_path(db_path: Optional[str]) -> str:
     return db_path or DB_PATH
+
 
 def ensure_db(db_path: str = DB_PATH):
     db_path = _resolve_db_path(db_path)
@@ -13,20 +24,35 @@ def ensure_db(db_path: str = DB_PATH):
     con = sqlite3.connect(db_path)
     con.execute("""
     CREATE TABLE IF NOT EXISTS notes_meta (
-      id                    INTEGER PRIMARY KEY AUTOINCREMENT,
-      ts                    INTEGER NOT NULL,
-      note_id               TEXT,
-      transcription_brute   TEXT,
-      transcription_clean   TEXT,
-      texte_ajoute          TEXT,
-      img_path_proc         TEXT,
-      images                TEXT,
-      raw_json              TEXT
+        id                      INTEGER PRIMARY KEY AUTOINCREMENT,
+        ts                      INTEGER NOT NULL,
+        note_id                 TEXT,
+        transcription_brute     TEXT,
+        transcription_clean     TEXT,
+        texte_ajoute            TEXT,
+        img_path_proc           TEXT,
+        images                  TEXT,
+        raw_json                TEXT,
+
+        -- Colonnes pour entités extraites
+        entite_GEO              TEXT,
+        entite_ACTOR            TEXT,
+        entite_DATETIME         TEXT,
+        entite_EVENT            TEXT,
+        entite_INFRASTRUCTURE   TEXT,
+        entite_OPERATING_CONTEXT TEXT,
+        entite_PHONE_NUMBER     TEXT,
+        entite_ELECTRICAL_VALUE TEXT,
+
+        -- Colonne évènement
+        evenement_id            TEXT
     );
     """)
-    con.execute("CREATE INDEX IF NOT EXISTS idx_notes_meta_ts ON notes_meta(ts);")
+    con.execute(
+        "CREATE INDEX IF NOT EXISTS idx_notes_meta_ts ON notes_meta(ts);")
     con.commit()
     con.close()
+
 
 def insert_note_meta(meta: dict, img_path_proc: Optional[str] = None, db_path: str = DB_PATH) -> int:
     """
@@ -35,6 +61,25 @@ def insert_note_meta(meta: dict, img_path_proc: Optional[str] = None, db_path: s
     """
     ensure_db(db_path)
     now = int(time.time())
+
+    # Déterminer l'événement auquel appartient cette note
+    entities_new = {
+        "GEO": json.loads(meta.get("entite_GEO") or "[]"),
+        "DATETIME": json.loads(meta.get("entite_DATETIME") or "[]"),
+        "EVENT": json.loads(meta.get("entite_EVENT") or "[]"),
+        "ACTOR": json.loads(meta.get("entite_ACTOR") or "[]"),
+        "INFRASTRUCTURE": json.loads(meta.get("entite_INFRASTRUCTURE") or "[]"),
+        "OPERATING_CONTEXT": json.loads(meta.get("entite_OPERATING_CONTEXT") or "[]"),
+        "PHONE_NUMBER": json.loads(meta.get("entite_PHONE_NUMBER") or "[]"),
+        "ELECTRICAL_VALUE": json.loads(meta.get("entite_ELECTRICAL_VALUE") or "[]")
+    }
+
+    evenement_id = find_existing_event_id(entities_new, db_path)
+    if evenement_id is None:
+        import uuid
+        evenement_id = str(uuid.uuid4())  # Nouveau groupe d'événement
+
+    # Insertion de la note
     row = (
         now,
         meta.get("note_id"),
@@ -43,19 +88,40 @@ def insert_note_meta(meta: dict, img_path_proc: Optional[str] = None, db_path: s
         meta.get("texte_ajoute"),
         img_path_proc,
         json.dumps(meta.get("images", []), ensure_ascii=False),
-        json.dumps(meta, ensure_ascii=False)
+        meta.get("raw_json") or json.dumps(
+            meta, ensure_ascii=False),  # ✅ ici on met bien raw_json
+
+        meta.get("entite_GEO"),
+        meta.get("entite_ACTOR"),
+        meta.get("entite_DATETIME"),
+        meta.get("entite_EVENT"),
+        meta.get("entite_INFRASTRUCTURE"),
+        meta.get("entite_OPERATING_CONTEXT"),
+        meta.get("entite_PHONE_NUMBER"),
+        meta.get("entite_ELECTRICAL_VALUE"),
+
+        evenement_id
     )
+
     con = sqlite3.connect(db_path)
     cur = con.cursor()
     cur.execute("""
-        INSERT INTO notes_meta
-        (ts, note_id, transcription_brute, transcription_clean, texte_ajoute, img_path_proc, images, raw_json)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO notes_meta (
+            ts, note_id, transcription_brute, transcription_clean, texte_ajoute,
+            img_path_proc, images, raw_json,
+            entite_GEO, entite_ACTOR, entite_DATETIME, entite_EVENT,
+            entite_INFRASTRUCTURE, entite_OPERATING_CONTEXT,
+            entite_PHONE_NUMBER, entite_ELECTRICAL_VALUE,
+            evenement_id
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, row)
+
     con.commit()
     new_id = cur.lastrowid
     con.close()
     return new_id
+
 
 def list_notes(limit: int = 20, db_path: str = DB_PATH) -> List[Dict]:
     ensure_db(db_path)
@@ -63,7 +129,11 @@ def list_notes(limit: int = 20, db_path: str = DB_PATH) -> List[Dict]:
     con.row_factory = sqlite3.Row
     cur = con.cursor()
     cur.execute("""
-        SELECT id, ts, note_id, transcription_brute, transcription_clean, texte_ajoute, img_path_proc, images
+        SELECT id, ts, note_id, transcription_brute, transcription_clean, texte_ajoute, img_path_proc, images,
+               entite_GEO, entite_ACTOR, entite_DATETIME, entite_EVENT,
+               entite_INFRASTRUCTURE, entite_OPERATING_CONTEXT,
+               entite_PHONE_NUMBER, entite_ELECTRICAL_VALUE,
+               evenement_id
         FROM notes_meta
         ORDER BY ts DESC
         LIMIT ?
@@ -71,6 +141,7 @@ def list_notes(limit: int = 20, db_path: str = DB_PATH) -> List[Dict]:
     rows = [dict(r) for r in cur.fetchall()]
     con.close()
     return rows
+
 
 def get_last_note_text(db_path: str = DB_PATH) -> Tuple[Optional[str], Optional[int]]:
     """
@@ -91,6 +162,7 @@ def get_last_note_text(db_path: str = DB_PATH) -> Tuple[Optional[str], Optional[
         return row["transcription_clean"], row["id"]
     return None, None
 
+
 def is_same_note(clean_text: str, db_path: str = DB_PATH, threshold: float = 0.7) -> Optional[int]:
     """
     Compare le texte nettoyé fourni à celui de la dernière note en base.
@@ -107,6 +179,7 @@ def is_same_note(clean_text: str, db_path: str = DB_PATH, threshold: float = 0.7
     if ratio >= threshold:
         return last_id
     return None
+
 
 def get_last_image_for_notes(db_path: str = DB_PATH) -> Dict[str, str]:
     """
@@ -129,6 +202,7 @@ def get_last_image_for_notes(db_path: str = DB_PATH) -> Dict[str, str]:
     con.close()
     return result
 
+
 def get_last_text_for_notes(db_path: str = DB_PATH) -> Dict[str, str]:
     """
     Retourne un dict {note_id: transcription_clean} pour le texte clean de la dernière note de chaque note_id.
@@ -150,6 +224,7 @@ def get_last_text_for_notes(db_path: str = DB_PATH) -> Dict[str, str]:
     con.close()
     return result
 
+
 def find_similar_note(clean_text: str, db_path: str = DB_PATH, threshold: float = 0.3) -> Optional[str]:
     """
     Compare le texte clean à toutes les dernières notes en base.
@@ -164,6 +239,7 @@ def find_similar_note(clean_text: str, db_path: str = DB_PATH, threshold: float 
         if ratio >= threshold:
             return note_id
     return None
+
 
 def compute_diff(old_text: str,
                  new_text: str,
@@ -263,7 +339,8 @@ def get_added_text(old_text: str,
     """
     Back-compat : ne renvoie que la version humaine (monospace) des changements.
     """
-    human, _ = compute_diff(old_text, new_text, minor_change_threshold=minor_change_threshold)
+    human, _ = compute_diff(
+        old_text, new_text, minor_change_threshold=minor_change_threshold)
     return human
 
 
@@ -285,7 +362,8 @@ def get_last_note_meta(db_path: str = DB_PATH) -> Optional[Dict]:
     if row:
         return dict(row)
     return None
-    
+
+
 def clear_notes_meta(db_path: str = DB_PATH):
     """
     Supprime toutes les lignes de la table notes_meta et réinitialise l'AUTOINCREMENT.
@@ -298,7 +376,8 @@ def clear_notes_meta(db_path: str = DB_PATH):
     cur.execute("DELETE FROM sqlite_sequence WHERE name='notes_meta';")
     con.commit()
     con.close()
-    print(f"La base de données '{db_path}' a été vidée (notes_meta clear, AUTOINCREMENT reset).")
+    print(
+        f"La base de données '{db_path}' a été vidée (notes_meta clear, AUTOINCREMENT reset).")
 
 
 def delete_entry_by_id(entry_id: int, db_path: str = DB_PATH) -> int:
@@ -311,6 +390,7 @@ def delete_entry_by_id(entry_id: int, db_path: str = DB_PATH) -> int:
     con.commit()
     con.close()
     return deleted
+
 
 def delete_thread_by_note_id(note_id: str, db_path: str = DB_PATH) -> int:
     """Supprime TOUTES les entrées liées à un note_id. Retourne le nb de lignes supprimées."""
@@ -326,7 +406,7 @@ def delete_thread_by_note_id(note_id: str, db_path: str = DB_PATH) -> int:
 
 def list_notes_by_note_id(note_id: str, db_path: str = DB_PATH, limit: int = 50) -> List[Dict]:
     """
-    Retourne toutes les entrées associées à un note_id donné, 
+    Retourne toutes les entrées associées à un note_id donné,
     triées par timestamp descendant.
     """
     ensure_db(db_path)
@@ -334,7 +414,11 @@ def list_notes_by_note_id(note_id: str, db_path: str = DB_PATH, limit: int = 50)
     con.row_factory = sqlite3.Row
     cur = con.cursor()
     cur.execute("""
-        SELECT id, ts, note_id, transcription_brute, transcription_clean, texte_ajoute, img_path_proc, images
+        SELECT id, ts, note_id, transcription_brute, transcription_clean, texte_ajoute, img_path_proc, images,
+               entite_GEO, entite_ACTOR, entite_DATETIME, entite_EVENT,
+               entite_INFRASTRUCTURE, entite_OPERATING_CONTEXT,
+               entite_PHONE_NUMBER, entite_ELECTRICAL_VALUE,
+               evenement_id
         FROM notes_meta
         WHERE note_id = ?
         ORDER BY ts DESC
@@ -343,3 +427,38 @@ def list_notes_by_note_id(note_id: str, db_path: str = DB_PATH, limit: int = 50)
     rows = [dict(r) for r in cur.fetchall()]
     con.close()
     return rows
+
+
+def find_existing_event_id(entities_new: Dict, db_path: str = DB_PATH) -> Optional[str]:
+    """
+    Parcourt les notes existantes pour voir si une note parle du même événement.
+    Retourne l'evenement_id correspondant, ou None si aucun.
+    """
+    con = sqlite3.connect(db_path)
+    con.row_factory = sqlite3.Row
+    cur = con.cursor()
+    cur.execute("""
+        SELECT evenement_id, entite_GEO, entite_DATETIME, entite_EVENT, entite_ACTOR,
+               entite_INFRASTRUCTURE, entite_OPERATING_CONTEXT, entite_PHONE_NUMBER, entite_ELECTRICAL_VALUE
+        FROM notes_meta
+        WHERE evenement_id IS NOT NULL
+    """)
+
+    for row in cur.fetchall():
+        entities_existing = {
+            "GEO": json.loads(row["entite_GEO"] or "[]"),
+            "DATETIME": json.loads(row["entite_DATETIME"] or "[]"),
+            "EVENT": json.loads(row["entite_EVENT"] or "[]"),
+            "ACTOR": json.loads(row["entite_ACTOR"] or "[]"),
+            "INFRASTRUCTURE": json.loads(row["entite_INFRASTRUCTURE"] or "[]"),
+            "OPERATING_CONTEXT": json.loads(row["entite_OPERATING_CONTEXT"] or "[]"),
+            "PHONE_NUMBER": json.loads(row["entite_PHONE_NUMBER"] or "[]"),
+            "ELECTRICAL_VALUE": json.loads(row["entite_ELECTRICAL_VALUE"] or "[]")
+        }
+
+        if same_event(entities_new, entities_existing)[0]:
+            con.close()
+            return row["evenement_id"]
+
+    con.close()
+    return None

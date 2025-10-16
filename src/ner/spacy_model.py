@@ -210,10 +210,14 @@ patterns += [
 # Voltage / Puissance
 patterns += [
     {"label": "ELECTRICAL_VALUE", "pattern": [
+        {"TEXT": {"REGEX": r"^\d+(?:[.,]\d+)?\s?(?:[kKmMgG]?[VvWw])$"}}
+    ]},
+    {"label": "ELECTRICAL_VALUE", "pattern": [
         {"TEXT": {"REGEX": r"^\d+(?:[.,]\d+)?$"}},
         {"TEXT": {"REGEX": r"^(?:[kKmMgG]?[VvWw])$"}}
     ]}
 ]
+
 
 # Lignes Ville–Ville
 city = r"[A-ZÉÈÎÏÀÂÙÛÜŸ][a-zàâçéèêëîïôûùüÿ\-]+"
@@ -241,24 +245,26 @@ def extract_entities(text, abbr_dict=ABBREVIATIONS_DICT):
     translated_text = translate_abbreviations(text, abbr_dict)
     doc = nlp(translated_text)
 
-    results = {
-        "original_text": text,
-        "translated_text": translated_text,
-        "entities": {}
-    }
+    labels = [
+        "GEO", "ACTOR", "DATETIME", "EVENT",
+        "INFRASTRUCTURE", "OPERATING_CONTEXT",
+        "PHONE_NUMBER", "ELECTRICAL_VALUE"
+    ]
+
+    entities = {label: [] for label in labels}
 
     for ent in doc.ents:
         grouped_label = group_labels(ent.label_)
-        results["entities"].setdefault(grouped_label, []).append(ent.text)
+        entities.setdefault(grouped_label, []).append(ent.text)
 
     # Dédoublonner
-    for key in results["entities"]:
-        results["entities"][key] = list(set(results["entities"][key]))
+    for key in entities:
+        entities[key] = list(set(entities[key]))
 
-    return results
+    return entities
 
 
 if __name__ == "__main__":
-    text = "Appeler Enedis au 07 28 39 83 23 pour RACR: incident au niveau du N-1 de Charles - Trappes."
+    text = "Etude RDCR Caen Cherbourg 225kV au +33 3 93 93 93 93"
     results = extract_entities(text)
     print(results)
