@@ -7,8 +7,6 @@ import re
 # Ajout du dossier src au path pour les imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-# fmt: off
-# isort: skip
 from src.processing.mistral_ocr_llm import image_transcription
 from src.backend.db import (
     DB_PATH,
@@ -18,11 +16,7 @@ from src.backend.db import (
 )
 from src.processing.mistral_ocr_llm import image_transcription
 from ner.spacy_model import extract_entities
-# fmt on  
-
-
 from src.utils.text_utils import has_meaningful_line, has_meaningful_text, compute_diff, is_htr_buggy, clean_added_text_for_ner
-
 from src.utils.image_utils import encode_image
 
 

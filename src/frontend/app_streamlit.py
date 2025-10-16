@@ -1,5 +1,4 @@
 import streamlit as st
-from src.backend.db import ensure_db
 import importlib.util
 from typing import List, Dict, Any, Optional
 from datetime import datetime
@@ -15,7 +14,7 @@ PROJECT_ROOT = os.path.abspath(
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-
+from src.backend.db import ensure_db
 ensure_db()
 
 db_path = os.path.join(os.path.dirname(__file__), "../backend/db.py")
@@ -269,33 +268,33 @@ for n in notes:
                 st.image(img, caption=os.path.basename(img), width='stretch')
             else:
                 st.caption(f"Image non disponible: {img_path}")
-        # Entités extraites
-        with st.expander("Entités extraites"):
-            def parse_entities_field(field_name: str):
-                val = n.get(field_name)
-                if val:
-                    try:
-                        return json.loads(val)
-                    except Exception:
-                        return []
-                return []
+    # Entités extraites
+    with st.expander("Entités extraites"):
+        def parse_entities_field(field_name: str):
+            val = n.get(field_name)
+            if val:
+                try:
+                    return json.loads(val)
+                except Exception:
+                    return []
+            return []
 
-            entities_display = {
-                "GEO": parse_entities_field("entite_GEO"),
-                "ACTOR": parse_entities_field("entite_ACTOR"),
-                "DATETIME": parse_entities_field("entite_DATETIME"),
-                "EVENT": parse_entities_field("entite_EVENT"),
-                "INFRASTRUCTURE": parse_entities_field("entite_INFRASTRUCTURE"),
-                "OPERATING_CONTEXT": parse_entities_field("entite_OPERATING_CONTEXT"),
-                "PHONE_NUMBER": parse_entities_field("entite_PHONE_NUMBER"),
-                "ELECTRICAL_VALUE": parse_entities_field("entite_ELECTRICAL_VALUE"),
-            }
+        entities_display = {
+            "GEO": parse_entities_field("entite_GEO"),
+            "ACTOR": parse_entities_field("entite_ACTOR"),
+            "DATETIME": parse_entities_field("entite_DATETIME"),
+            "EVENT": parse_entities_field("entite_EVENT"),
+            "INFRASTRUCTURE": parse_entities_field("entite_INFRASTRUCTURE"),
+            "OPERATING_CONTEXT": parse_entities_field("entite_OPERATING_CONTEXT"),
+            "PHONE_NUMBER": parse_entities_field("entite_PHONE_NUMBER"),
+            "ELECTRICAL_VALUE": parse_entities_field("entite_ELECTRICAL_VALUE"),
+        }
 
-            if not any(entities_display.values()):
-                st.caption("Aucune entité stockée pour cette note.")
-            else:
-                for label, values in entities_display.items():
-                    st.write(f"**{label}** : {', '.join(values) or '—'}")
+        if not any(entities_display.values()):
+            st.caption("Aucune entité stockée pour cette note.")
+        else:
+            for label, values in entities_display.items():
+                st.write(f"**{label}** : {', '.join(values) or '—'}")
 
     # ----- Actions -----
     st.markdown("**Actions**")

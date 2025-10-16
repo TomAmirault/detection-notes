@@ -1,4 +1,3 @@
-
 # Ajoute le dossier racine du projet au sys.path pour permettre les imports internes
 from difflib import SequenceMatcher
 from typing import Optional, List, Dict, Tuple
@@ -7,19 +6,16 @@ import sqlite3
 import json
 import sys
 import os
+
 PROJECT_ROOT = os.path.abspath(
     os.path.join(os.path.dirname(__file__), '../..'))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-# fmt: off
-# isort: skip
 from ner.compare_entities import same_event
-# fmt: on
 
 DB_PATH = os.environ.get("RTE_DB_PATH", "data/db/notes.sqlite")
-
 
 def _resolve_db_path(db_path: Optional[str]) -> str:
     return db_path or DB_PATH
@@ -96,7 +92,7 @@ def insert_note_meta(meta: dict, img_path_proc: Optional[str] = None, db_path: s
         img_path_proc,
         json.dumps(meta.get("images", []), ensure_ascii=False),
         meta.get("raw_json") or json.dumps(
-            meta, ensure_ascii=False),  # ✅ ici on met bien raw_json
+            meta, ensure_ascii=False),  
 
         meta.get("entite_GEO"),
         meta.get("entite_ACTOR"),
