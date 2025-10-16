@@ -1,6 +1,7 @@
 from vad import VADe
 from enregistrement import record_loop
 from transcribe import transcribe_w2v2_clean
+from transcribe_whisper import transcribe_whisper_clean
 import threading
 
 # Ajoute la racine du projet au sys.path pour permettre les imports internes
@@ -37,7 +38,7 @@ if __name__ == "__main__":
                 
             for audio_path in folder_tmp.glob("*.wav"): 
                 try:
-                    res = transcribe_w2v2_clean(audio_path)
+                    res = transcribe_whisper_clean(audio_path)
                     if not res:
                         # transcribe returned None -> already transcribed or skipped
                         continue
@@ -59,7 +60,7 @@ if __name__ == "__main__":
         VADe(audio_path, min_duration_on_choice, min_duration_off_choice)
         
     for audio_path in folder_tmp.glob("*.wav"): 
-        transcribe_w2v2_clean(audio_path) 
+        transcribe_whisper_clean(audio_path) 
     print("Fin.")
 
 
