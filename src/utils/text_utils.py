@@ -186,7 +186,7 @@ def _max_consecutive_run(tokens):
     return max_run
 
 
-def is_htr_buggy(ocr_text: str, cleaned_text: str = "") -> (bool, str):
+def is_htr_buggy(ocr_text: str, cleaned_text: str = "") -> tuple[bool, str]:
     """
     Retourne (is_buggy, reason). Heuristiques pour détecter un bug OCR/HTR (répétitions absurdes).
     """
