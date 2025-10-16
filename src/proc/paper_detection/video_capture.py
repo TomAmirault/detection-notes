@@ -1,10 +1,9 @@
-
-# Ajoute le dossier src au sys.path pour permettre les imports internes
+# Ajoute la racine du projet au sys.path pour permettre les imports internes
 import sys
 import os
-SRC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
-if SRC_PATH not in sys.path:
-    sys.path.insert(0, SRC_PATH)
+REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
+if REPO_PATH not in sys.path:
+    sys.path.insert(0, REPO_PATH)
 
 import cv2
 import time

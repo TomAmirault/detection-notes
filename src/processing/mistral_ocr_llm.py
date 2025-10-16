@@ -1,4 +1,4 @@
-import os, re, base64
+import os, re
 from mistralai import Mistral
 from dotenv import load_dotenv
 
@@ -96,7 +96,7 @@ def image_transcription(base64_image: str) -> str:
 
     # 2. Pré-process
     ocr_text = pre_collapse_continuations(ocr_text)
-    print("=== Après pré-process ===\n", ocr_text)
+    # print("=== Après pré-process ===\n", ocr_text)
 
     # 3. Prompt LLM
     prompt = f"""Tu es un assistant de normalisation pour des notes manuscrites RTE.
@@ -206,10 +206,10 @@ Contenu à traiter :
         temperature=0.0
     )
     clean_text = response.choices[0].message.content.strip()
-    print("=== Réponse LLM brute ===\n", clean_text)
+    # print("=== Réponse LLM brute ===\n", clean_text)
 
     # 4. Post-process
     clean_text = postprocess_normalized(clean_text)
-    print("=== Après post-process ===\n", clean_text)
+    print("=== LLM après post-process ===\n", clean_text)
 
     return ocr_text, clean_text

@@ -8,9 +8,15 @@ import soundfile as sf
 import numpy as np
 import noisereduce as nr
 import torch
-import os
 import json
 from datetime import datetime, timedelta
+
+# Ajoute la racine du projet au sys.path pour permettre les imports internes
+import sys
+import os
+REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
+if REPO_PATH not in sys.path:
+    sys.path.insert(0, REPO_PATH)
 
 # python3 src/transcription/
 
@@ -19,7 +25,7 @@ model_segm = Model.from_pretrained(
 
 pipeline = VoiceActivityDetection(segmentation=model_segm)
 
-def VADe(audio_path, min_duration_on=2.0, min_duration_off=2.0):
+def VADe(audio_path, min_duration_on=3.0, min_duration_off=2.0):
 
     HYPER_PARAMETERS = {
     # Si un segment de parole détecté dure moins de 3 secondes, il sera ignoré.
@@ -47,18 +53,27 @@ def VADe(audio_path, min_duration_on=2.0, min_duration_off=2.0):
     #Time
     filename_brut = audio_path.name
 
-    with open("src/transcription/tests/audio_brut.json", "r") as f:
-        data = json.load(f)
+    brut_json_path = "src/transcription/tests/audio_brut.json"
+    if not os.path.exists(brut_json_path):
+        print(f"Fichier introuvable: {brut_json_path} — saut de VADe pour {audio_path}")
+        return
 
-    entry = next((item for item in data if item["filename"] == filename_brut ), None)
+    with open(brut_json_path, "r", encoding="utf-8") as f:
+        try:
+            data = json.load(f)
+        except json.JSONDecodeError:
+            print(f"JSON invalide dans {brut_json_path} — saut de VADe pour {audio_path}")
+            return
 
-    if entry:
-        i=0
-    else:
-        print("Aucun enregistrement trouvé pour ce fichier.")
-    
-    
-    start_time = entry["start_time"]
+    entry = next((item for item in data if item.get("filename") == filename_brut), None)
+    if not entry:
+        print(f"Aucun enregistrement trouvé pour ce fichier ({filename_brut}) dans {brut_json_path}.")
+        return
+
+    start_time = entry.get("start_time")
+    if not start_time:
+        print(f"Aucun start_time pour {filename_brut} — saut de VADe.")
+        return
 
     
     waveform, sr = torchaudio.load(audio_path)

@@ -4,16 +4,15 @@ from typing import Optional, List, Dict, Tuple
 import time
 import sqlite3
 import json
+
+# Ajoute la racine du projet au sys.path pour permettre les imports internes
 import sys
 import os
+REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
+if REPO_PATH not in sys.path:
+    sys.path.insert(0, REPO_PATH)
 
-PROJECT_ROOT = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '../..'))
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from ner.compare_entities import same_event
+from src.ner.compare_entities import same_event
 from src.utils.text_utils import compute_diff
 
 DB_PATH = os.environ.get("RTE_DB_PATH", "data/db/notes.sqlite")
@@ -34,9 +33,8 @@ def ensure_db(db_path: str = DB_PATH):
         transcription_brute     TEXT,
         transcription_clean     TEXT,
         texte_ajoute            TEXT,
-        img_path_proc           TEXT,
-        images                  TEXT,
-        raw_json                TEXT,
+    img_path_proc           TEXT,
+    raw_json                TEXT,
 
         -- Colonnes pour entités extraites
         entite_GEO              TEXT,
@@ -84,15 +82,14 @@ def insert_note_meta(meta: dict, img_path_proc: Optional[str] = None, db_path: s
         evenement_id = str(uuid.uuid4())  # Nouveau groupe d'événement
 
     # Insertion de la note
-    row = (
+        row = (
         now,
         meta.get("note_id"),
         meta.get("transcription_brute"),
         meta.get("transcription_clean"),
         meta.get("texte_ajoute"),
         img_path_proc,
-        json.dumps(meta.get("images", []), ensure_ascii=False),
-        meta.get("raw_json") or json.dumps(
+            meta.get("raw_json") or json.dumps(
             meta, ensure_ascii=False),  
 
         meta.get("entite_GEO"),
@@ -112,13 +109,13 @@ def insert_note_meta(meta: dict, img_path_proc: Optional[str] = None, db_path: s
     cur.execute("""
         INSERT INTO notes_meta (
             ts, note_id, transcription_brute, transcription_clean, texte_ajoute,
-            img_path_proc, images, raw_json,
+            img_path_proc, raw_json,
             entite_GEO, entite_ACTOR, entite_DATETIME, entite_EVENT,
             entite_INFRASTRUCTURE, entite_OPERATING_CONTEXT,
             entite_PHONE_NUMBER, entite_ELECTRICAL_VALUE,
             evenement_id
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, row)
 
     con.commit()
@@ -133,7 +130,7 @@ def list_notes(limit: int = 20, db_path: str = DB_PATH) -> List[Dict]:
     con.row_factory = sqlite3.Row
     cur = con.cursor()
     cur.execute("""
-        SELECT id, ts, note_id, transcription_brute, transcription_clean, texte_ajoute, img_path_proc, images,
+    SELECT id, ts, note_id, transcription_brute, transcription_clean, texte_ajoute, img_path_proc,
                entite_GEO, entite_ACTOR, entite_DATETIME, entite_EVENT,
                entite_INFRASTRUCTURE, entite_OPERATING_CONTEXT,
                entite_PHONE_NUMBER, entite_ELECTRICAL_VALUE,
@@ -289,7 +286,7 @@ def clear_notes_meta(db_path: str = DB_PATH):
     con.commit()
     con.close()
     print(
-        f"La base de données '{db_path}' a été vidée (notes_meta clear, AUTOINCREMENT reset).")
+        f"La base de données a été vidée.")
 
 
 def delete_entry_by_id(entry_id: int, db_path: str = DB_PATH) -> int:
@@ -326,7 +323,7 @@ def list_notes_by_note_id(note_id: str, db_path: str = DB_PATH, limit: int = 50)
     con.row_factory = sqlite3.Row
     cur = con.cursor()
     cur.execute("""
-        SELECT id, ts, note_id, transcription_brute, transcription_clean, texte_ajoute, img_path_proc, images,
+    SELECT id, ts, note_id, transcription_brute, transcription_clean, texte_ajoute, img_path_proc,
                entite_GEO, entite_ACTOR, entite_DATETIME, entite_EVENT,
                entite_INFRASTRUCTURE, entite_OPERATING_CONTEXT,
                entite_PHONE_NUMBER, entite_ELECTRICAL_VALUE,

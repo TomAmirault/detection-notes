@@ -15,8 +15,6 @@ def main():
     video_capture_path = os.path.abspath(os.path.join(BASE_DIR, "proc/paper_detection/video_capture.py"))
     yolo_path = os.path.join(BASE_DIR, "proc/paper_detection/yolo_tracker.py")
 
-    print(video_capture_path)
-
     # Pour l'audio
     audio_path = os.path.join(BASE_DIR, "transcription/audio_watcher.py")
 
@@ -28,17 +26,20 @@ def main():
 
         # Lancer Streamlit en arrière-plan avec logs dans le terminal principal
         processes.append(subprocess.Popen(["streamlit", "run", streamlit_path], stdout=sys.stdout, stderr=sys.stderr))
+        print("1) Front (UI) lancé.")
 
         # Lancer la caméra en arrière-plan avec logs dans le terminal principal et cwd forcé à la racine du projet
         project_root = os.path.abspath(os.path.join(BASE_DIR, ".."))
         processes.append(subprocess.Popen(["python3", video_capture_path], stdout=sys.stdout, stderr=sys.stderr, cwd=project_root))
         #processes.append(subprocess.Popen(["python3", yolo_path], stdout=sys.stdout, stderr=sys.stderr, cwd=project_root))
+        print("2) Lancement du système de détection de feuilles de papier.")
 
         # Lancer l'audio en arrière-plan
         processes.append(subprocess.Popen(["python3", audio_path], stdout=sys.stdout, stderr=sys.stderr))
+        print("3) Microphone actif — numérisation audio en cours.")
 
-        print("Tous les process ont été lancés en arrière-plan.")
-        print("Le système est en train de numériser les notes.")
+        print("=> Tous les process ont été lancés en arrière-plan.")
+        print("Le système numérise toutes les informations (notes manuscrites et parole).")
         while True:
             time.sleep(1)
     except KeyboardInterrupt:

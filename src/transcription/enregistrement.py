@@ -33,7 +33,7 @@ def record_loop(duration, stop_event, device,  bruit_reduction=True, samplerate=
 
     k = 1
 
-    print("Parlez (Ctrl+C pour arrêter).")
+    print("Enregistrement de la parole.")
 
     try:
         with sd.InputStream(samplerate=samplerate, channels=1, dtype='float32') as stream:
