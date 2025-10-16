@@ -181,12 +181,3 @@ def add_audio2db(audio_path: str, transcription_brute: str, transcription_clean:
     meta_id = insert_note_meta(extracted_data, img_path_proc=None, db_path=db_path)
     print(f"Audio inséré (note_id {note_id}, meta_id {meta_id})")
     return meta_id
-
-
-import os
-folder = "/Users/tomamirault/Documents/projects/p1-dty-rte/vertical-attention-network-for-handwritten-text-recognition/data/raw"
-for filename in os.listdir(folder):
-    if filename.lower().endswith(('jpg')):
-        image_path = os.path.join(folder, filename)
-        add_data2db(image_path)
-
