@@ -1,19 +1,52 @@
-import json, uuid, sys, os
+import json
+import uuid
+import sys
+import os
+import re
 
 # Ajout du dossier src au path pour les imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+# fmt: off
+# isort: skip
+from src.recog.mistral_ocr_llm import image_transcription
 from src.backend.db import (
     DB_PATH,
     insert_note_meta,
     get_last_text_for_notes,
     find_similar_note 
 )
-from src.processing.mistral_ocr_llm import image_transcription  
+from src.processing.mistral_ocr_llm import image_transcription
+from ner.spacy_model import extract_entities
+# fmt on  
+
 
 from src.utils.text_utils import has_meaningful_line, has_meaningful_text, compute_diff, is_htr_buggy
 
 from src.utils.image_utils import encode_image
+
+
+def clean_added_text_for_ner(text: str) -> str:
+    cleaned_lines = []
+    for line in text.splitlines():
+        line = line.strip()
+
+        # Ignore complètement les lignes supprimées
+        if re.match(r"^\-\s*Ancienne\s+ligne\s+\d+\.", line, flags=re.IGNORECASE):
+            continue
+
+        # Supprime uniquement le préfixe des lignes ajoutées
+        new_line = re.sub(
+            r"^\+\s*Ligne\s+\d+\.\s*",
+            "",
+            line,
+            flags=re.IGNORECASE
+        ).strip()
+
+        if new_line:
+            cleaned_lines.append(new_line)
+
+    return "\n".join(cleaned_lines)
 
 
 def add_data2db(image_path: str, db_path: str = DB_PATH):
@@ -41,12 +74,14 @@ def add_data2db(image_path: str, db_path: str = DB_PATH):
         return None
 
     if not cleaned_text or not cleaned_text.strip():
-        print(f"[SKIP] Aucun texte exploitable après normalisation pour {image_path}")
+        print(
+            f"[SKIP] Aucun texte exploitable après normalisation pour {image_path}")
         return None
 
     # 2) Cherche une note existante similaire
-    
-    similar_note_id = find_similar_note(cleaned_text, db_path=db_path, threshold=0.7)
+
+    similar_note_id = find_similar_note(
+        cleaned_text, db_path=db_path, threshold=0.7)
 
     diff_human = ""
     diff_json = []
@@ -62,13 +97,14 @@ def add_data2db(image_path: str, db_path: str = DB_PATH):
         print(diff_json)
 
         if not diff_human.strip():
-            print(f"Aucune vraie nouveauté pour la note {similar_note_id}. Ignorée.")
+            print(
+                f"Aucune vraie nouveauté pour la note {similar_note_id}. Ignorée.")
             return None
-        
+
         if not has_meaningful_line(diff_human):
             print(f"[SKIP] Diff sans contenu utile pour note {similar_note_id}")
             return None
-        
+
         if not has_meaningful_text(cleaned_text):
             print(f"[SKIP] Aucun texte exploitable (anti-bruit) pour {image_path}")
             return None
@@ -80,8 +116,10 @@ def add_data2db(image_path: str, db_path: str = DB_PATH):
         # nouvelle feuille
         note_id = str(uuid.uuid4())
         lines = [l for l in cleaned_text.splitlines() if l.strip()]
-        diff_human = "\n".join(f"+ Ligne {i+1}. {l}" for i, l in enumerate(lines))
-        diff_json = [{"type": "insert", "line": i+1, "content": l} for i, l in enumerate(lines)]
+        diff_human = "\n".join(
+            f"+ Ligne {i+1}. {l}" for i, l in enumerate(lines))
+        diff_json = [{"type": "insert", "line": i+1, "content": l}
+                     for i, l in enumerate(lines)]
         print(f"Nouvelle note créée avec id {note_id}")
 
     # 3) Insertion en DB
@@ -91,6 +129,13 @@ def add_data2db(image_path: str, db_path: str = DB_PATH):
         "diff": diff_json,
     }
 
+    # Extraction d'entités
+    if diff_human.strip():
+        cleaned_diff_human = clean_added_text_for_ner(diff_human)
+        entities = extract_entities(cleaned_diff_human)
+    else:
+        entities = {}
+
     extracted_data = {
         "note_id": note_id,
         "transcription_brute": ocr_text,        # <— OCR brut
@@ -98,10 +143,19 @@ def add_data2db(image_path: str, db_path: str = DB_PATH):
         "texte_ajoute": diff_human,
         "img_path_proc": image_path,
         "images": [],
-        "raw_json": json.dumps(raw, ensure_ascii=False)
+        "raw_json": json.dumps(raw, ensure_ascii=False),
+        "entite_GEO": json.dumps(entities.get("GEO", []), ensure_ascii=False),
+        "entite_ACTOR": json.dumps(entities.get("ACTOR", []), ensure_ascii=False),
+        "entite_DATETIME": json.dumps(entities.get("DATETIME", []), ensure_ascii=False),
+        "entite_EVENT": json.dumps(entities.get("EVENT", []), ensure_ascii=False),
+        "entite_INFRASTRUCTURE": json.dumps(entities.get("INFRASTRUCTURE", []), ensure_ascii=False),
+        "entite_OPERATING_CONTEXT": json.dumps(entities.get("OPERATING_CONTEXT", []), ensure_ascii=False),
+        "entite_PHONE_NUMBER": json.dumps(entities.get("PHONE_NUMBER", []), ensure_ascii=False),
+        "entite_ELECTRICAL_VALUE": json.dumps(entities.get("ELECTRICAL_VALUE", []), ensure_ascii=False),
     }
 
-    meta_id = insert_note_meta(extracted_data, img_path_proc=image_path, db_path=db_path)
+    meta_id = insert_note_meta(
+        extracted_data, img_path_proc=image_path, db_path=db_path)
     print(f"Note insérée (note_id {note_id}, meta_id {meta_id})")
     return meta_id
 
