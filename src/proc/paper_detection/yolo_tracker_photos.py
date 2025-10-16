@@ -50,7 +50,7 @@ try :
                     mean_h, mean_s, mean_v = cv2.mean(hsv)[:3]
 
                     # Condition : zone claire et peu saturée (donc blanche)
-                    if mean_s < 100 and mean_v > 175:
+                    if mean_s < 100 and mean_v > 210:
                         blur_value = laplacian_variance(cropped)
                         buffer.append({'image':cropped, 'blur_value':blur_value})
 

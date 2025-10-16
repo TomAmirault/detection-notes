@@ -7,7 +7,7 @@ import os
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
-def laplacian_variance(img:np.ndarray) -> float:
+def laplacian_variance(img:np.ndarray, grid_size=(40, 40), top_k=3) -> float:
     """Cette fonction renvoie la variance du laplacien de la matrice img représentant les niveaux de gris de
     l'image sur laquelle on souhaite travailler. Plus un eimage est floue, et plus la variance de son laplacien
     sera petite.
@@ -17,10 +17,31 @@ def laplacian_variance(img:np.ndarray) -> float:
 
     Returns:
         float: la valeur de la variance du laplacien
-    """    
-    res = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    value = cv2.Laplacian(res, cv2.CV_64F, ksize = 3).var()
-    return value
+    """
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    h, w = gray.shape
+    n_rows, n_cols = grid_size
+    dh, dw = h // n_rows, w // n_cols
+
+    scores = []
+
+    for i in range(n_rows):
+        for j in range(n_cols):
+            y1, y2 = i * dh, (i + 1) * dh
+            x1, x2 = j * dw, (j + 1) * dw
+            roi = gray[y1:y2, x1:x2]
+
+            # Calcul du Laplacien et de sa variance
+            score = cv2.Laplacian(roi, cv2.CV_64F, ksize = 3).var()
+
+            scores.append(score)
+
+    sorted_scores = sorted(scores)
+    top_scores = sorted_scores[:min(top_k, len(sorted_scores))]
+
+    avg_flou = np.mean(top_scores)
+
+    return avg_flou
 
 def less_blurred(video:list[Results]) -> int:
     """Cette fonction renvoie l'indice de l'image la moins floue de video en utilisant laplacian_variance.

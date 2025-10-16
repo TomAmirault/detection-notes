@@ -346,8 +346,11 @@ if __name__ == "__main__":
             print("L'image traitée est :", f)
             img = cv2.imread(os.path.join(tmp_dir, f))
             h,w = img.shape[:2]
-        
-            corrected = test_segmentation(img)
+
+            hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+            mean_h, mean_s, mean_v = cv2.mean(hsv)[:3]
+            print(mean_h, mean_s, mean_v)
+            # corrected = test_segmentation(img)
 
             # test_augment(img)
             # cv2.imshow("PErspectivé", corrected)

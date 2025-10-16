@@ -3,6 +3,8 @@ from enregistrement import record_loop
 from transcribe import transcribe_w2v2_clean
 from transcribe_whisper import transcribe_whisper_clean
 import threading
+import json
+
 
 # Ajoute la racine du projet au sys.path pour permettre les imports internes
 import sys
@@ -22,7 +24,7 @@ prompt = "Abréviations officielles (ne pas développer ; corrige variantes proc
 
 if __name__ == "__main__":
     try:
-        record_duration = 10
+        record_duration = 30
         stop_event = threading.Event()
         device_index = 0
         enregistrement_thread = threading.Thread(target = record_loop, args=(record_duration, stop_event, device_index))
@@ -30,6 +32,40 @@ if __name__ == "__main__":
         
         folder_tmp = Path("src/transcription/tmp")
         folder_tests = Path("src/transcription/tests")
+
+        # Cleanup leftover recording chunks from previous runs
+        for folder in (folder_tmp, folder_tests):
+            for f in folder.glob("record_chunk*.wav"):
+                try:
+                    f.unlink()
+                except Exception as e:
+                    print(f"Could not remove {f}: {e}")
+
+        # Cleanup JSON logs referencing record_chunk*.wav
+        transcriptions_log = folder_tmp / "transcriptions_log.json"
+        try:
+            if transcriptions_log.exists():
+                data = json.loads(transcriptions_log.read_text(encoding='utf-8'))
+                before = len(data)
+                data = [entry for entry in data if not entry.get('filename','').startswith('record_chunk')]
+                after = len(data)
+                if after != before:
+                    transcriptions_log.write_text(json.dumps(data, ensure_ascii=False, indent=4), encoding='utf-8')
+        except Exception as e:
+            print(f"Could not clean {transcriptions_log}: {e}")
+
+        audio_brut = folder_tests / "audio_brut.json"
+        try:
+            if audio_brut.exists():
+                import json
+                data = json.loads(audio_brut.read_text(encoding='utf-8'))
+                before = len(data)
+                data = [entry for entry in data if not entry.get('filename','').startswith('record_chunk')]
+                after = len(data)
+                if after != before:
+                    audio_brut.write_text(json.dumps(data, ensure_ascii=False, indent=4), encoding='utf-8')
+        except Exception as e:
+            print(f"Could not clean {audio_brut}: {e}")
         
         while True:
             
