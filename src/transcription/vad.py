@@ -1,31 +1,126 @@
+from pathlib import Path
 from huggingface_hub import login
 from pyannote.audio import Model
 from pyannote.audio.pipelines import VoiceActivityDetection
+import torchaudio
+import sounddevice as sd
+import soundfile as sf
+import numpy as np
+import noisereduce as nr
+import torch
+import os
+import json
+from datetime import datetime, timedelta
 
-# Remplace "TON_TOKEN" par ton token Hugging Face
-login(token="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")
+# python3 src/transcription/
 
+model_segm = Model.from_pretrained(
+"pyannote/segmentation-3.0")
 
-def VAD(audio_path, min_duration_on=2, min_duration_of=2):
-    
-    model = Model.from_pretrained(
-    "pyannote/segmentation-3.0")
+pipeline = VoiceActivityDetection(segmentation=model_segm)
 
-    pipeline = VoiceActivityDetection(segmentation=model)
+def VADe(audio_path, min_duration_on=2.0, min_duration_off=2.0):
+
     HYPER_PARAMETERS = {
     # Si un segment de parole détecté dure moins de 3 secondes, il sera ignoré.
     "min_duration_on": min_duration_on,
     # Si une pause est plus courte que 10 secondes, elle peut être remplie ou fusionnée avec les segments voisins.
-    "min_duration_off": min_duration_of
+    "min_duration_off": min_duration_off
     }
     pipeline.instantiate(HYPER_PARAMETERS)
     vad = pipeline(audio_path)
-    segment_start = []
-    segment_end = []
+
+    log_path = os.path.join("src/transcription/tmp", "transcriptions_log.json")
+
+    # Charger le JSON existant s'il existe
+    if os.path.exists(log_path):
+        with open(log_path, "r", encoding="utf-8") as f:
+            try:
+                logs = json.load(f)
+            except json.JSONDecodeError:
+                logs = []
+    else:
+        logs = []
+        
+        
+        
+    #Time
+    filename_brut = audio_path.name
+
+    with open("src/transcription/tests/audio_brut.json", "r") as f:
+        data = json.load(f)
+
+    entry = next((item for item in data if item["filename"] == filename_brut ), None)
+
+    if entry:
+        i=0
+    else:
+        print("Aucun enregistrement trouvé pour ce fichier.")
+    
+    
+    start_time = entry["start_time"]
+
+    
+    waveform, sr = torchaudio.load(audio_path)
+    i=0
     for segment, _, _ in vad.itertracks(yield_label=True):
         #print(segment)
-        segment_start.append(segment.start)
-        segment_end.append(segment.end)
+        i = i+1
         
-    return segment_start,segment_end
+        s = int(segment.start)
+        e = int(segment.end)
+        
+        start = int(segment.start * sr)
+        end = int(segment.end * sr)
+        
+        segment = waveform[:, start:end]
+        
+        segment_filename = f"{os.path.splitext(os.path.basename(audio_path))[0]}_segment_{i}.wav"
+        segment_path = os.path.join("src/transcription/tmp", segment_filename)
+        
+        torchaudio.save(segment_path, segment, sr)
+        
+        
+        base_start_str = start_time
+        base_start = datetime.strptime(base_start_str, "%Y-%m-%d %H:%M:%S")
 
+
+        absolute_start = base_start + timedelta(seconds=s)
+        absolute_end = base_start + timedelta(seconds=e)
+        
+        
+        entry = {
+            "start_time": absolute_start.strftime("%Y-%m-%d %H:%M:%S"),
+            "end_time": absolute_end.strftime("%Y-%m-%d %H:%M:%S"),
+            "filename": segment_filename
+        }
+        logs.append(entry)
+        
+    # --- AJOUT DU TRI PAR DATE APRÈS SAUVEGARDE ---
+
+
+    logs.sort(key=lambda x: datetime.strptime(x["start_time"], "%Y-%m-%d %H:%M:%S"))
+
+
+    with open(log_path, "w", encoding="utf-8") as f:
+        json.dump(logs, f, indent=4, ensure_ascii=False)
+    # ------------------------------------------------ #
+
+    with open("src/transcription/tests/audio_brut.json", "r") as f:
+        data = json.load(f)
+    
+    data = [entry for entry in data if entry.get("filename") != filename_brut]
+    for entry in data : 
+        print(entry.get("filename"))
+        print(filename_brut)
+        
+    with open("src/transcription/tests/audio_brut.json", "w") as f:
+        json.dump(data, f, indent=4)
+    
+    os.remove(audio_path)
+    
+if __name__ == "__main__":
+    folder = Path("src/transcription/tests")
+    for audio_path in folder.glob("*.wav"): 
+        print(audio_path)
+        VADe(audio_path, min_duration_on=1, min_duration_off=2)    
