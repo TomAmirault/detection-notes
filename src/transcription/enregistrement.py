@@ -7,8 +7,11 @@ import os
 import json
 
 # python3 src/transcription/enregistrement.py
+# python3 -m sounddevice   /  Pour voir les entrées audio
+ 
+device_index = 0
 
-def record_loop(duration, stop_event, bruit_reduction=True, samplerate=16000):
+def record_loop(duration, stop_event, device,  bruit_reduction=True, samplerate=16000):
     """
     Enregistre des segments audio consécutifs et les sauvegarde dans un dossier temporaire.
     L'enregistrement s'arrête manuellement avec Ctrl+C ou automatiquement après `duration` secondes.
