@@ -1,11 +1,16 @@
+
+# Ajoute le dossier src au sys.path pour permettre les imports internes
+import sys
+import os
+SRC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
+if SRC_PATH not in sys.path:
+    sys.path.insert(0, SRC_PATH)
+
 import cv2
 import time
-from shape_detector import shape_detector
-from save_detection import save_detection
-from image_preprocessing import preprocessed_image
-
-
-
+from src.proc.paper_detection.shape_detector import shape_detector
+from src.proc.paper_detection.save_detection import save_detection
+from src.proc.paper_detection.image_preprocessing import preprocessed_image
 
 # Timer
 start = time.time()

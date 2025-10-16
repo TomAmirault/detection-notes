@@ -1,12 +1,21 @@
+import sys
 import os
+
+# Ajoute le dossier racine du projet au sys.path
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
 import sqlite3
 import time
 import json
 from datetime import datetime
 from typing import List, Dict, Any, Optional
-
-import sys
 import importlib.util
+
+
+from src.backend.db import ensure_db
+ensure_db()
 
 db_path = os.path.join(os.path.dirname(__file__), "../backend/db.py")
 spec = importlib.util.spec_from_file_location("db", db_path)
@@ -102,7 +111,7 @@ with st.sidebar:
 
 # Auto-refresh léger
 if REFRESH_SECONDS > 0:
-    st.experimental_set_query_params(_=int(time.time() // REFRESH_SECONDS))
+    st.query_params["_"] = str(int(time.time() // REFRESH_SECONDS))
 
 # Chargement notes
 notes = fetch_notes(limit=limit, ts_from=ts_from, ts_to=ts_to, q=q)
@@ -150,7 +159,7 @@ for n in notes:
     with header_cols[2]:
         img = safe_image(n.get("img_path_proc"))
         if img:
-            st.image(img, use_column_width=True, caption=os.path.basename(img))
+            st.image(img, width='stretch', caption=os.path.basename(img))
         else:
             st.caption("Pas d'image disponible")
 
@@ -164,7 +173,7 @@ for n in notes:
         for img_path in images:
             img = safe_image(img_path)
             if img:
-                st.image(img, caption=os.path.basename(img), use_column_width=True)
+                st.image(img, caption=os.path.basename(img), width='stretch')
             else:
                 st.caption(f"Image non disponible: {img_path}")
                 
