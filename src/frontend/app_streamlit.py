@@ -5,14 +5,13 @@ from datetime import datetime
 import json
 import time
 import sqlite3
+
+# Ajoute la racine du projet au sys.path pour permettre les imports internes
 import sys
 import os
-
-# Ajoute le dossier racine du projet au sys.path
-PROJECT_ROOT = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '../..'))
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
+REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
+if REPO_PATH not in sys.path:
+    sys.path.insert(0, REPO_PATH)
 
 from src.backend.db import ensure_db
 ensure_db()
@@ -30,7 +29,6 @@ list_notes_by_note_id = db.list_notes_by_note_id
 
 
 # Pour lancer le front : streamlit run src/frontend/app_streamlit.py
-
 
 # --- Config ---
 DB_PATH = os.environ.get("RTE_DB_PATH", "data/db/notes.sqlite")
@@ -50,8 +48,8 @@ def fetch_notes(limit: int = 50,
                 ts_to: Optional[int] = None,
                 q: str = "") -> List[Dict[str, Any]]:
     sql = """
-        SELECT id, ts, note_id, transcription_brute, transcription_clean, texte_ajoute,
-               img_path_proc, images,
+    SELECT id, ts, note_id, transcription_brute, transcription_clean, texte_ajoute,
+           img_path_proc,
                entite_GEO, entite_ACTOR, entite_DATETIME, entite_EVENT,
                entite_INFRASTRUCTURE, entite_OPERATING_CONTEXT,
                entite_PHONE_NUMBER, entite_ELECTRICAL_VALUE,
@@ -213,13 +211,13 @@ else:
 
 # Auto-refresh léger
 if REFRESH_SECONDS > 0:
-    st.experimental_set_query_params(_=int(time.time() // REFRESH_SECONDS))
+    st.query_params["_"] = str(int(time.time() // REFRESH_SECONDS))
 
 # Bandeau résumé
 st.markdown(f"**{len(notes)}** notes affichées")
 
 st.markdown(
-    "<h1 style='text-align: center; color: #E74C3C;'>Analyse des Notes</h1>",
+    "<h1 style='text-align: center; color: #E74C3C;'>Informations extraites (texte & audio)</h1>",
     unsafe_allow_html=True
 )
 
@@ -239,35 +237,37 @@ for n in notes:
 
     # Colonne centre : textes
     with header_cols[1]:
-        st.markdown("**Texte OCR brut**")
+        st.markdown("**Transcription brute**")
         st.markdown(f"```\n{n.get('transcription_brute') or '—'}\n```")
 
-        st.markdown("**Texte clean**")
+        st.markdown("**Transcription nettoyée**")
         st.markdown(f"```\n{n.get('transcription_clean') or '—'}\n```")
 
-        st.markdown("**Texte ajouté**")
+        st.markdown("**Informations ajoutées**")
         st.markdown(f"```\n{n.get('texte_ajoute') or '—'}\n```")
 
-    # Colonne droite : image
+    # Colonne droite : image ou lecteur audio si présent dans raw_json
     with header_cols[2]:
         img = safe_image(n.get("img_path_proc"))
+        raw = n.get("raw_json")
+        audio_path = None
+        try:
+            if raw:
+                parsed = json.loads(raw)
+                # compatibilité: clé 'audio_path' ou 'audio'
+                audio_path = parsed.get("audio_path") or parsed.get("audio")
+        except Exception:
+            audio_path = None
+
         if img:
             st.image(img, width='stretch', caption=os.path.basename(img))
+        elif audio_path and os.path.exists(audio_path):
+            st.audio(audio_path, format="audio/wav")
+            st.caption(os.path.basename(audio_path))
         else:
-            st.caption("Pas d'image disponible")
+            st.caption("Pas d'image/audio disponible")
 
-    # Images extraites
-    with st.expander("Images extraites"):
-        try:
-            images = json.loads(n.get("images") or "[]")
-        except Exception:
-            images = []
-        for img_path in images:
-            img = safe_image(img_path)
-            if img:
-                st.image(img, caption=os.path.basename(img), width='stretch')
-            else:
-                st.caption(f"Image non disponible: {img_path}")
+    # (Images extraites supprimées - champ 'images' retiré de la base)
     # Entités extraites
     with st.expander("Entités extraites"):
         def parse_entities_field(field_name: str):
@@ -330,96 +330,7 @@ for n in notes:
                         f"{deleted} entrées supprimées (note_id={n['note_id']}).")
                     st.rerun()
 
-# --------------------------Audio----------------------#
-st.markdown(
-    "<h1 style='text-align: center; color: #E74C3C;'>Analyse des Audios</h1>",
-    unsafe_allow_html=True
-)
-tmp_dir = os.path.join("src/transcription/tmp")
-audio_json_path = os.path.join(tmp_dir, "transcriptions_log.json")
-
-# 1. Charger la liste des audios depuis le JSON
-notes_audio = []
-if os.path.exists(audio_json_path):
-    with open(audio_json_path, "r") as f:
-        data = json.load(f)
-        # Chaque entrée du JSON devient une "note"
-        for item in data:
-            filename = item.get("filename", "")
-            full_path = os.path.join(tmp_dir, filename)
-            if os.path.exists(full_path):
-                notes_audio.append({
-                    "id": os.path.splitext(filename)[0],
-                    "ts": item.get("start_time", ""),
-                    "audio_path": full_path,
-                    "transcription_audio_brute": item.get("transcription", "—"),
-                    "transcription_audio_clean": item.get("transcription", "—"),
-                    "commentaire_audio": "",
-                })
-else:
-    st.warning(f"Aucun fichier JSON trouvé à {audio_json_path}")
-
-# 2. Affichage des audios sous forme de cartes
-for n in notes_audio:
-    st.markdown("---")
-    header_cols = st.columns([1, 4, 2])
-
-    with header_cols[0]:
-        st.markdown(f"**ID**: {n['id']}")
-        st.markdown(f"**TS**: {n['ts']}")
-
-    with header_cols[1]:
-        st.markdown("**Transcription brute (audio)**")
-        st.markdown(f"```\n{n.get('transcription_audio_brute') or '—'}\n```")
-
-        st.markdown("**Transcription clean (audio)**")
-        st.markdown(f"```\n{n.get('transcription_audio_clean') or '—'}\n```")
-
-        st.markdown("**Commentaires audio**")
-        st.markdown(f"```\n{n.get('commentaire_audio') or '—'}\n```")
-
-    with header_cols[2]:
-        audio_path = n.get("audio_path")
-        if audio_path and os.path.exists(audio_path):
-            st.audio(audio_path, format="audio/wav")
-            st.caption(os.path.basename(audio_path))
-        else:
-            st.caption("Pas d’audio disponible")
-    # ------------------------------------------------------#
-
-    # ----- Actions -----
-    st.markdown("**Actions**")
-    a1, a2, a3 = st.columns([1, 1, 4])
-
-    # Suppression d'une entrée (ligne)
-    with a1:
-        with st.popover("🗑️ Supprimer cette entrée"):
-            st.caption(
-                "Supprime uniquement CETTE ligne (id). Opération irréversible.")
-            confirm1 = st.checkbox(
-                f"Confirmer suppression id={n['id']}", key=f"del_id_ck_{n['id']}")
-            if st.button("Supprimer", key=f"del_id_btn_{n['id']}", disabled=not confirm1):
-                deleted = delete_entry_by_id(int(n["id"]), db_path=DB_PATH)
-                st.success(f"{deleted} entrée supprimée (id={n['id']}).")
-                st.rerun()
-
-    # Suppression de tout le fil (même note_id)
-    with a2:
-        disabled_thread = not n.get("note_id")
-        with st.popover("🗑️ Supprimer TOUTE la note_id", disabled=disabled_thread):
-            if disabled_thread:
-                st.caption("Pas de note_id pour cette entrée.")
-            else:
-                st.caption(
-                    f"Supprime toutes les entrées de note_id={n['note_id']}. Opération irréversible.")
-                confirm2 = st.checkbox(
-                    f"Confirmer suppression note_id={n['note_id']}", key=f"del_thread_ck_{n['id']}")
-                if st.button("Supprimer tout", key=f"del_thread_btn_{n['id']}", disabled=not confirm2):
-                    deleted = delete_thread_by_note_id(
-                        n["note_id"], db_path=DB_PATH)
-                    st.success(
-                        f"{deleted} entrées supprimées (note_id={n['note_id']}).")
-                    st.rerun()
+# (Section audio séparée supprimée — les audios sont affichés dans la liste principale via raw_json.audio_path)
 
 # Rafraîchissement automatique
 if REFRESH_SECONDS > 0:

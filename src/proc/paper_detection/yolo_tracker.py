@@ -1,6 +1,14 @@
 # Ce fichier, une fois exécuté, capte en continu le flux de la webcam de l'ordinateur, et, dès que le
 # modèle YOLO détecte une feuille de papier, il enregistre les 20 frames suivantes, pour sélectionner
 # la frame la moins floue et l'enregistrer, ainsi que sa version rognée autour de la bounding box.
+
+# Ajoute la racine du projet au sys.path pour permettre les imports internes
+import sys
+import os
+REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
+if REPO_PATH not in sys.path:
+    sys.path.insert(0, REPO_PATH)
+
 import cv2
 import time
 from datetime import datetime
@@ -10,24 +18,11 @@ from blurry_detection import less_blurred
 # from segmentation import crop_image_around_object
 from segmentation_threshold import crop_image_around_object, get_binary_image_of_text
 
-
-# Ajoute le dossier src au sys.path pour permettre les imports internes
-import sys
-import os
-SRC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
-if SRC_PATH not in sys.path:
-    sys.path.insert(0, SRC_PATH)
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-sys.path.append(os.path.join(BASE_DIR,"../../"))
-
 from src.processing.add_data2db import add_data2db
 
 
-
 # Modèle YOLOv11 finetuné sur le dataset https://universe.roboflow.com/dty-opi9m/detection-de-feuilles-245oo
-model_path = os.path.join(BASE_DIR, '../detection_model/best-detect.pt')
+model_path = os.path.join(SRC_PATH, 'proc/detection_model/best-detect.pt')
 model = YOLO(model_path)
 
 # Timer

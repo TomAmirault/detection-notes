@@ -1,11 +1,13 @@
 import json
 import uuid
 import sys
-import os
-import re
 
-# Ajout du dossier src au path pour les imports
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Ajoute la racine du projet au sys.path pour permettre les imports internes
+import sys
+import os
+REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if REPO_PATH not in sys.path:
+    sys.path.insert(0, REPO_PATH)
 
 from src.processing.mistral_ocr_llm import image_transcription
 from src.backend.db import (
@@ -15,7 +17,7 @@ from src.backend.db import (
     find_similar_note 
 )
 from src.processing.mistral_ocr_llm import image_transcription
-from ner.spacy_model import extract_entities
+from src.ner.spacy_model import extract_entities
 from src.utils.text_utils import has_meaningful_line, has_meaningful_text, compute_diff, is_htr_buggy, clean_added_text_for_ner
 from src.utils.image_utils import encode_image
 
@@ -62,10 +64,10 @@ def add_data2db(image_path: str, db_path: str = DB_PATH):
         last_texts = get_last_text_for_notes(db_path)
         old_text = last_texts.get(similar_note_id, "")
         diff_human, diff_json = compute_diff(old_text, cleaned_text, minor_change_threshold=0.90)
-        print("=== DIFF HUMAIN ===")
-        print(diff_human)
-        print("=== DIFF JSON ===")
-        print(diff_json)
+        # print("=== DIFF HUMAIN ===")
+        # print(diff_human)
+        # print("=== DIFF JSON ===")
+        # print(diff_json)
 
         if not diff_human.strip():
             print(
@@ -113,7 +115,6 @@ def add_data2db(image_path: str, db_path: str = DB_PATH):
         "transcription_clean": cleaned_text,     # <— texte normalisé stable
         "texte_ajoute": diff_human,
         "img_path_proc": image_path,
-        "images": [],
         "raw_json": json.dumps(raw, ensure_ascii=False),
         "entite_GEO": json.dumps(entities.get("GEO", []), ensure_ascii=False),
         "entite_ACTOR": json.dumps(entities.get("ACTOR", []), ensure_ascii=False),
@@ -128,6 +129,57 @@ def add_data2db(image_path: str, db_path: str = DB_PATH):
     meta_id = insert_note_meta(
         extracted_data, img_path_proc=image_path, db_path=db_path)
     print(f"Note insérée (note_id {note_id}, meta_id {meta_id})")
+    return meta_id
+
+
+def add_audio2db(audio_path: str, transcription_brute: str, transcription_clean: str, db_path: str = DB_PATH):
+    """
+    Insert an audio transcription as a notes_meta entry.
+
+    Policy: each audio segment is treated as an "ajout" (new line). We create a new note_id
+    per audio segment so the front displays each audio as its own entry; evenement grouping
+    is still handled by the DB via entity matching.
+    """
+    # Ensure we have some text
+    if not transcription_clean or not transcription_clean.strip():
+        print(f"[SKIP] audio {audio_path} has no cleaned transcription")
+        return None
+
+    # Prepare diff/texte_ajoute for audio: each audio is a single added line
+    diff_human = f"+ Ligne 1. {transcription_clean.strip()}"
+    diff_json = [{"type": "insert", "line": 1, "content": transcription_clean.strip()}]
+
+    # Extract entities from cleaned transcription
+    cleaned_for_ner = clean_added_text_for_ner(diff_human)
+    entities = extract_entities(cleaned_for_ner) if cleaned_for_ner else {}
+
+    note_id = str(uuid.uuid4())
+
+    raw = {
+        "source": "audio-wav2vec2",
+        "audio_path": audio_path,
+        "diff": diff_json,
+    }
+
+    extracted_data = {
+        "note_id": note_id,
+        "transcription_brute": transcription_brute,
+        "transcription_clean": transcription_clean,
+        "texte_ajoute": diff_human,
+        "img_path_proc": None,
+        "raw_json": json.dumps(raw, ensure_ascii=False),
+        "entite_GEO": json.dumps(entities.get("GEO", []), ensure_ascii=False),
+        "entite_ACTOR": json.dumps(entities.get("ACTOR", []), ensure_ascii=False),
+        "entite_DATETIME": json.dumps(entities.get("DATETIME", []), ensure_ascii=False),
+        "entite_EVENT": json.dumps(entities.get("EVENT", []), ensure_ascii=False),
+        "entite_INFRASTRUCTURE": json.dumps(entities.get("INFRASTRUCTURE", []), ensure_ascii=False),
+        "entite_OPERATING_CONTEXT": json.dumps(entities.get("OPERATING_CONTEXT", []), ensure_ascii=False),
+        "entite_PHONE_NUMBER": json.dumps(entities.get("PHONE_NUMBER", []), ensure_ascii=False),
+        "entite_ELECTRICAL_VALUE": json.dumps(entities.get("ELECTRICAL_VALUE", []), ensure_ascii=False),
+    }
+
+    meta_id = insert_note_meta(extracted_data, img_path_proc=None, db_path=db_path)
+    print(f"Audio inséré (note_id {note_id}, meta_id {meta_id})")
     return meta_id
 
 

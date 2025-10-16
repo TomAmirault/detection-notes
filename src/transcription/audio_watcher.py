@@ -1,16 +1,22 @@
-
-print("Chargement des Modèles")
-
 from vad import VADe
 from enregistrement import record_loop
 from transcribe import transcribe_w2v2_clean
 import threading
+
+# Ajoute la racine du projet au sys.path pour permettre les imports internes
+import sys
 import os
+REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
+if REPO_PATH not in sys.path:
+    sys.path.insert(0, REPO_PATH)
+
+from src.processing.add_data2db import add_audio2db
 from pathlib import Path
 import warnings
 warnings.filterwarnings("ignore")
 
-print("Modèles Prêts")
+min_duration_on_choice = 3
+min_duration_off_choice = 2
 
 
 if __name__ == "__main__":
@@ -27,10 +33,18 @@ if __name__ == "__main__":
         while True:
             
             for audio_path in folder_tests.glob("*.wav"): 
-                VADe(audio_path, min_duration_on=2, min_duration_off=5)
+                VADe(audio_path, min_duration_on_choice, min_duration_off_choice)
                 
             for audio_path in folder_tmp.glob("*.wav"): 
-                transcribe_w2v2_clean(audio_path)  
+                try:
+                    res = transcribe_w2v2_clean(audio_path)
+                    if not res:
+                        # transcribe returned None -> already transcribed or skipped
+                        continue
+                    raw, clean = res
+                    add_audio2db(str(audio_path), raw, clean)
+                except Exception as e:
+                    print(f"Erreur transcription/insertion audio pour {audio_path}: {e}")
                 
     except KeyboardInterrupt:
         print("Arrêt demandé par l'utilisateur")
@@ -42,7 +56,7 @@ if __name__ == "__main__":
     enregistrement_thread.join()
     
     for audio_path in folder_tests.glob("*.wav"): 
-        VADe(audio_path, min_duration_on=2, min_duration_off=5)
+        VADe(audio_path, min_duration_on_choice, min_duration_off_choice)
         
     for audio_path in folder_tmp.glob("*.wav"): 
         transcribe_w2v2_clean(audio_path) 

@@ -52,7 +52,8 @@ def transcribe_w2v2_clean(audio_path):
 
     entry = next((item for item in logs if item["filename"] == filename_brut ), None)
 
-    
+    if entry and entry.get("transcription"):
+        return
     
     wav_path = audio_path
     waveform, sample_rate = torchaudio.load(wav_path)
@@ -74,12 +75,15 @@ def transcribe_w2v2_clean(audio_path):
     predicted_sentence = processor.batch_decode(predicted_ids)[0]
 
     entry["transcription"] = predicted_sentence
-    
-    entry["transcription_clean"] = nettoyer_transcription_audio(predicted_sentence)
+    cleaned = nettoyer_transcription_audio(predicted_sentence)
+    entry["transcription_clean"] = cleaned
 
     os.makedirs(os.path.dirname(log_path), exist_ok=True)
     with open(log_path, "w", encoding="utf-8") as f:
         json.dump(logs, f, ensure_ascii=False, indent=4)
+
+    # Return raw and cleaned transcriptions so callers can insert them in DB
+    return predicted_sentence, cleaned
 
 if __name__ == "__main__":
     folder = Path("src/transcription/tmp")
