@@ -22,7 +22,7 @@ def main():
     try:
         # Nettoyer la base de données au lancement
         clear_db_path = os.path.join(BASE_DIR, "backend/clear_db.py")
-        subprocess.run(["python3", clear_db_path], check=True)
+        subprocess.run([sys.executable, clear_db_path], check=True)
 
         # Lancer Streamlit en arrière-plan avec logs dans le terminal principal
         processes.append(subprocess.Popen(["streamlit", "run", streamlit_path], stdout=sys.stdout, stderr=sys.stderr))
@@ -30,12 +30,12 @@ def main():
 
         # Lancer la caméra en arrière-plan avec logs dans le terminal principal et cwd forcé à la racine du projet
         project_root = os.path.abspath(os.path.join(BASE_DIR, ".."))
-        processes.append(subprocess.Popen(["python3", video_capture_path], stdout=sys.stdout, stderr=sys.stderr, cwd=project_root))
-        #processes.append(subprocess.Popen(["python3", yolo_path], stdout=sys.stdout, stderr=sys.stderr, cwd=project_root))
+        processes.append(subprocess.Popen([sys.executable, video_capture_path], stdout=sys.stdout, stderr=sys.stderr, cwd=project_root))
+        #processes.append(subprocess.Popen([sys.executable, yolo_path], stdout=sys.stdout, stderr=sys.stderr, cwd=project_root))
         print("2) Lancement du système de détection de feuilles de papier.")
 
         # Lancer l'audio en arrière-plan
-        processes.append(subprocess.Popen(["python3", audio_path], stdout=sys.stdout, stderr=sys.stderr))
+        processes.append(subprocess.Popen([sys.executable, audio_path], stdout=sys.stdout, stderr=sys.stderr))
         print("3) Microphone actif — numérisation audio en cours.")
 
         print("=> Tous les process ont été lancés en arrière-plan.")
