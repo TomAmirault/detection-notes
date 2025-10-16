@@ -3,7 +3,7 @@
 import subprocess
 import time
 import os
-from add_data2db import add_data2db
+from processing.add_data2db import add_data2db
 
 WORKING_DIR = "/Users/tomamirault/Documents/Projects/p1-dty-rte/"
 RASPBERRY_IP = "raspberrypi.local"

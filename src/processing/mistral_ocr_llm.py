@@ -1,6 +1,4 @@
-import os
-import re
-import base64
+import os, re, base64
 from mistralai import Mistral
 from dotenv import load_dotenv
 
@@ -9,10 +7,6 @@ load_dotenv()
 api_key = os.getenv("MISTRAL_API_KEY")
 client = Mistral(api_key=api_key)
 
-# --- Encode image ---
-def encode_image(path: str) -> str:
-    with open(path, "rb") as image_file:
-        return base64.b64encode(image_file.read()).decode("utf-8")
 
 # --- Pré-process : collapse des lignes de continuation ---
 def pre_collapse_continuations(text: str) -> str:
@@ -37,8 +31,6 @@ def pre_collapse_continuations(text: str) -> str:
 
 # --- Post-process : normalisations déterministes ---
 def postprocess_normalized(text: str) -> str:
-    import re
-
     # 0) Nettoyages durs de balises ou code fences
     text = text.replace("```", "")
     text = text.replace("<<<", "").replace(">>>", "")
@@ -88,12 +80,9 @@ def postprocess_normalized(text: str) -> str:
     return out
 
 
-
-
 # --- Fonction principale ---
-def image_transcription(image_path: str) -> str:
+def image_transcription(base64_image: str) -> str:
     # 1. OCR brut
-    base64_image = encode_image(image_path)
     response = client.ocr.process(
         model="mistral-ocr-latest",
         document={
@@ -103,9 +92,11 @@ def image_transcription(image_path: str) -> str:
         include_image_base64=True
     )
     ocr_text = response.pages[0].markdown.strip()
+    print("=== OCR brut ===\n", ocr_text)
 
     # 2. Pré-process
     ocr_text = pre_collapse_continuations(ocr_text)
+    print("=== Après pré-process ===\n", ocr_text)
 
     # 3. Prompt LLM
     prompt = f"""Tu es un assistant de normalisation pour des notes manuscrites RTE.
@@ -118,7 +109,6 @@ def image_transcription(image_path: str) -> str:
     2) 1 information = 1 ligne.
     - Ne crée PAS de lignes vides.
     - Ne fusionne PAS des lignes éloignées.
-    - Traite les lignes de continuation immédiate (ex: débutant par “↳”, “>”, indentation, puce) comme la CONTINUATION de la ligne précédente : dans ce cas, tu concatènes à la ligne précédente en ajoutant un espace (PAS un saut de ligne).
     3) Nettoyage MINIMAL :
     - Supprime les préfixes décoratifs uniquement en DÉBUT de ligne : **, *, -, •, [], >, “## …”, “# …”.
     - Normalise les espaces (un seul espace entre mots).
@@ -147,7 +137,7 @@ def image_transcription(image_path: str) -> str:
 
     EXEMPLES (respect absolu de l’ordre d’entrée)
 
-    Exemple A — entrées avec flèche de continuation, mini fautes :
+    Exemple A — entrées avec mini fautes :
     Entrée :
     **Rappel:** prévenir M. Martin (ancien: 0766 37 0247)
     nouveau: 07 66 37 8247
@@ -161,8 +151,10 @@ def image_transcription(image_path: str) -> str:
     Sortie attendue :
     Prévenir M. Martin ancien: 0766370247
     Nouveau: 0766378247
-    Appel privé avec Jean Maintenance vérifier planning travaux
-    Confirmation travaux demain 8h
+    Appel privé avec Jean Maintenance vérifier 
+    planning travaux
+    Confirmation travaux 
+    demain 8h
     T4 T2 T3
     Envoyer CR à CM à 16h
 
@@ -214,11 +206,10 @@ Contenu à traiter :
         temperature=0.0
     )
     clean_text = response.choices[0].message.content.strip()
+    print("=== Réponse LLM brute ===\n", clean_text)
 
     # 4. Post-process
     clean_text = postprocess_normalized(clean_text)
-
-    # Debug
-    print("\n=== OCR brut ===\n", ocr_text, "\n\n=== Normalisé ===\n", clean_text)
+    print("=== Après post-process ===\n", clean_text)
 
     return ocr_text, clean_text

@@ -8,7 +8,7 @@ sys.path.append(os.path.abspath(os.path.join(BASE_DIR, "../../..")))
 
 
 from src.proc.paper_detection.perspective_corrector import corrected_perspective
-from src.add_data2db import add_data2db
+from src.processing.add_data2db import add_data2db
 import cv2
 import time
 import numpy as np

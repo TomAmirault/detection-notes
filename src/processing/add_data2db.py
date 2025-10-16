@@ -1,39 +1,24 @@
-import json
-import uuid
+import json, uuid, sys, os
 
-import sys
-import os
+# Ajout du dossier src au path pour les imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from src.backend.db import (
     DB_PATH,
     insert_note_meta,
     get_last_text_for_notes,
-    find_similar_note,
-    compute_diff,   
+    find_similar_note 
 )
-from src.recog.mistral_ocr_llm import image_transcription  
+from src.processing.mistral_ocr_llm import image_transcription  
 
-def _has_meaningful_line(s: str) -> bool:
-    import re
-    for ln in (s or "").splitlines():
-        if re.search(r"[A-Za-zÀ-ÿ0-9]", ln):
-            return True
-    return False
+from src.utils.text_utils import has_meaningful_line, has_meaningful_text, compute_diff, is_htr_buggy
 
-import re
-
-def _has_meaningful_text(s: str) -> bool:
-    if not s or not s.strip():
-        return False
-    # au moins un mot >= 2 lettres OU un chiffre
-    return bool(re.search(r"[A-Za-zÀ-ÿ]{2,}", s) or re.search(r"\d", s))
+from src.utils.image_utils import encode_image
 
 
 def add_data2db(image_path: str, db_path: str = DB_PATH):
     """
     Workflow :
-    0) (optionnel) Comparaison visuelle avec les dernières images de chaque note_id (ignore si trop similaire)
     1) OCR + normalisation stable (LLM)
     2) Cherche une note similaire (même feuille)
     3) Si similaire :
@@ -43,9 +28,17 @@ def add_data2db(image_path: str, db_path: str = DB_PATH):
        Sinon :
          - crée un nouveau note_id et insère tout le texte (comme ajout initial)
     """
+    # 0) Encodage de l'image en base64 (pour Mistral OCR)
+    encoded_image = encode_image(image_path)
 
     # 1) OCR + normalisation
-    ocr_text, cleaned_text = image_transcription(image_path)
+    ocr_text, cleaned_text = image_transcription(encoded_image)
+
+    # >>> Pare-feu avant toute logique de DB
+    buggy, reason = is_htr_buggy(ocr_text, cleaned_text)
+    if buggy:
+        print(f"[SKIP][HTR-BUG] {reason} pour {image_path}")
+        return None
 
     if not cleaned_text or not cleaned_text.strip():
         print(f"[SKIP] Aucun texte exploitable après normalisation pour {image_path}")
@@ -63,16 +56,20 @@ def add_data2db(image_path: str, db_path: str = DB_PATH):
         last_texts = get_last_text_for_notes(db_path)
         old_text = last_texts.get(similar_note_id, "")
         diff_human, diff_json = compute_diff(old_text, cleaned_text, minor_change_threshold=0.90)
+        print("=== DIFF HUMAIN ===")
+        print(diff_human)
+        print("=== DIFF JSON ===")
+        print(diff_json)
 
         if not diff_human.strip():
             print(f"Aucune vraie nouveauté pour la note {similar_note_id}. Ignorée.")
             return None
         
-        if not _has_meaningful_line(diff_human):
+        if not has_meaningful_line(diff_human):
             print(f"[SKIP] Diff sans contenu utile pour note {similar_note_id}")
             return None
         
-        if not _has_meaningful_text(cleaned_text):
+        if not has_meaningful_text(cleaned_text):
             print(f"[SKIP] Aucun texte exploitable (anti-bruit) pour {image_path}")
             return None
 

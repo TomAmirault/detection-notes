@@ -1,4 +1,14 @@
-import os, json, sqlite3, time
+
+# Ajoute le dossier racine du projet au sys.path pour permettre les imports internes
+import sys
+import os
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+import json
+import sqlite3
+import time
 from typing import Optional, List, Dict, Tuple
 from difflib import SequenceMatcher
 
@@ -164,97 +174,6 @@ def find_similar_note(clean_text: str, db_path: str = DB_PATH, threshold: float 
         if ratio >= threshold:
             return note_id
     return None
-
-def compute_diff(old_text: str,
-                 new_text: str,
-                 minor_change_threshold: float = 0.90) -> Tuple[str, List[Dict]]:
-    """
-    Renvoie (human_str, diff_json)
-    - human_str : lignes ajoutées / modifiées / supprimées en monospace (avec n° de ligne)
-    - diff_json : liste d'opérations {type, line, content}
-      type ∈ {"insert","replace","delete"}
-      line = numéro de ligne dans le NOUVEAU texte (1-based) pour insert/replace,
-             numéro de ligne dans l'ANCIEN pour delete (clé 'old_line')
-    Règles :
-      - insert : on liste toujours
-      - replace : seulement si différence significative (ratio < minor_change_threshold)
-      - delete : on liste (journalisation)
-    """
-    old_lines = old_text.splitlines()
-    new_lines = new_text.splitlines()
-
-    sm = SequenceMatcher(None, old_lines, new_lines, autojunk=False)
-
-    human_rows: List[str] = []
-    diff_json: List[Dict] = []
-
-    for tag, i1, i2, j1, j2 in sm.get_opcodes():
-        if tag == "equal":
-            continue
-
-        if tag == "insert":
-            # Nouvelles lignes dans new[j1:j2]
-            for offset, ln in enumerate(new_lines[j1:j2], start=j1):
-                if ln.strip():
-                    human_rows.append(f"+ Ligne {offset+1}. {ln}")
-                    diff_json.append({
-                        "type": "insert",
-                        "line": offset + 1,
-                        "content": ln
-                    })
-
-        elif tag == "replace":
-            old_block = old_lines[i1:i2]
-            new_block = new_lines[j1:j2]
-
-            if len(old_block) == len(new_block):
-                # comparaison 1-1
-                for offset, (a, b) in enumerate(zip(old_block, new_block), start=j1):
-                    if not b.strip():
-                        continue
-                    ratio = SequenceMatcher(None, a, b).ratio()
-                    if ratio < minor_change_threshold:
-                        human_rows.append(f"~ Ligne {offset+1}. {b}")
-                        diff_json.append({
-                            "type": "replace",
-                            "line": offset + 1,
-                            "old_content": a,
-                            "content": b,
-                            "similarity": float(ratio)
-                        })
-            else:
-                # tailles différentes : tout le bloc nouveau est considéré comme insert,
-                # et l'ancien comme delete
-                for offset, b in enumerate(new_block, start=j1):
-                    if b.strip():
-                        human_rows.append(f"+ Ligne {offset+1}. {b}")
-                        diff_json.append({
-                            "type": "insert",
-                            "line": offset + 1,
-                            "content": b
-                        })
-                for offset, a in enumerate(old_block, start=i1):
-                    if a.strip():
-                        human_rows.append(f"- Ancienne ligne {offset+1}. {a}")
-                        diff_json.append({
-                            "type": "delete",
-                            "old_line": offset + 1,
-                            "old_content": a
-                        })
-
-        elif tag == "delete":
-            # Lignes supprimées dans old[i1:i2]
-            for offset, a in enumerate(old_lines[i1:i2], start=i1):
-                if a.strip():
-                    human_rows.append(f"- Ancienne ligne {offset+1}. {a}")
-                    diff_json.append({
-                        "type": "delete",
-                        "old_line": offset + 1,
-                        "old_content": a
-                    })
-
-    human_str = "\n".join(human_rows)
-    return human_str, diff_json
 
 
 def get_added_text(old_text: str,

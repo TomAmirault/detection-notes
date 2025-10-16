@@ -1,7 +1,7 @@
 import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from add_data2db import add_data2db
+from processing.add_data2db import add_data2db
 
 import time
 from watchdog.observers import Observer

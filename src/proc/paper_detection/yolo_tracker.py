@@ -10,13 +10,19 @@ from blurry_detection import less_blurred
 # from segmentation import crop_image_around_object
 from segmentation_threshold import crop_image_around_object, get_binary_image_of_text
 
+
+# Ajoute le dossier src au sys.path pour permettre les imports internes
+import sys
+import os
+SRC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
+if SRC_PATH not in sys.path:
+    sys.path.insert(0, SRC_PATH)
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 sys.path.append(os.path.join(BASE_DIR,"../../"))
 
-print(sys.path)
-
-from add_data2db import add_data2db
+from src.processing.add_data2db import add_data2db
 
 
 
@@ -59,11 +65,11 @@ try :
                 # print("rect :", rect)
                 # print("shape :", result.orig_img.shape)
 
-                processed = crop_image_around_object(video[best].orig_img, rect)
-                # thresholded = get_binary_image_of_text(video[best].orig_img, rect)
+                # processed = crop_image_around_object(video[best].orig_img, rect)
+                thresholded = get_binary_image_of_text(video[best].orig_img, rect)
                 # filename_frame = os.path.join(BASE_DIR, "../../../tmp/paper", f"paper_{stamp}.jpg")
                 filename_frame2 = os.path.join(BASE_DIR, "../../../tmp/paper", f"paper_processed_{stamp}.jpg")
-                cv2.imwrite(filename_frame2, processed)   
+                cv2.imwrite(filename_frame2, thresholded)   
                 # cv2.imwrite(filename_frame, thresholded) 
 
                 add_data2db(filename_frame2)  # On ajoute l'image rognée à la base de données
@@ -85,9 +91,9 @@ try :
             box_y_top = int(y-0.5*h)
             rect = (box_x_left, box_y_top, int(w), int(h))
 
-            processed = crop_image_around_object(video[best].orig_img, rect)
-            # thresholded = get_binary_image_of_text(video[best].orig_img, rect)
-            cv2.imwrite(filename_frame2, processed)   
+            # processed = crop_image_around_object(video[best].orig_img, rect)
+            thresholded = get_binary_image_of_text(video[best].orig_img, rect)
+            cv2.imwrite(filename_frame2, thresholded)   
             # cv2.imwrite(filename_frame, thresholded)                              # On enregistre la frame avec la bounding box tracée
             
             add_data2db(filename_frame2)  # On ajoute l'image rognée à la base de données
