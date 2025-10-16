@@ -22,7 +22,7 @@ from src.processing.add_data2db import add_data2db
 
 
 # Modèle YOLOv11 finetuné sur le dataset https://universe.roboflow.com/dty-opi9m/detection-de-feuilles-245oo
-model_path = os.path.join(SRC_PATH, 'proc/detection_model/best-detect.pt')
+model_path = os.path.join(REPO_PATH, 'src/proc/detection_model/best-detect.pt')
 model = YOLO(model_path)
 
 # Timer
