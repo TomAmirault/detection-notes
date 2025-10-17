@@ -9,6 +9,7 @@ import time
 from src.image_similarity.resize_minkowski_interpolation import minkowski_resize
 from datetime import datetime
 from logger_config import setup_logger, save_fig_with_limit
+from pathlib import Path
 
 # BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -91,7 +92,9 @@ def save_comparison(img1, img2_aligned, overlay, tranform1, transform2, diff, is
 
 
 
-def isSimilar(old_img, new_img):
+def isSimilar(old_img_path:Path, new_img_path:Path) -> bool:
+    old_img = cv2.imread(old_img_path)
+    new_img = cv2.imread(new_img_path)
     img1 = cv2.cvtColor(old_img, cv2.COLOR_BGR2GRAY)
     img2 = cv2.cvtColor(new_img, cv2.COLOR_BGR2GRAY)
 

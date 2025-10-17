@@ -4,6 +4,8 @@ from typing import Optional, List, Dict, Tuple
 import time
 import sqlite3
 import json
+from pathlib import Path
+import cv2
 
 # Ajoute la racine du projet au sys.path pour permettre les imports internes
 import sys
@@ -14,6 +16,7 @@ if REPO_PATH not in sys.path:
 
 from src.ner.compare_entities import same_event
 from src.utils.text_utils import compute_diff
+from src.image_similarity.orb_and_align import isSimilar
 
 DB_PATH = os.environ.get("RTE_DB_PATH", "data/db/notes.sqlite")
 
@@ -225,6 +228,30 @@ def get_last_text_for_notes(db_path: str = DB_PATH) -> Dict[str, str]:
     con.close()
     return result
 
+def get_last_notes(db_path: str = DB_PATH) -> Dict[str, str]:
+    """
+    Retourne la liste des images les plus récentes des 20 dernières notes capturées.
+    """
+    ensure_db(db_path)
+    con = sqlite3.connect(db_path)
+    con.row_factory = sqlite3.Row
+    cur = con.cursor()
+    cur.execute("""
+        SELECT DISTINCT img_path_proc
+        FROM notes_meta
+        WHERE note_id, ts = (SELECT note_id, MAX(ts) as ts
+                            FROM notes_meta
+                            WHERE note_id IS NOT NULL
+                            GROUP BY note_id)
+        ORDER BY ts DESC
+        LIMIT 20
+    """)
+    result = []
+    for row in cur.fetchall():
+        if row["img_path_proc"]:
+            result.append(row["img_path_proc"])
+    con.close()
+    return result
 
 def find_similar_note(clean_text: str, db_path: str = DB_PATH, threshold: float = 0.3) -> Optional[str]:
     """
@@ -239,6 +266,17 @@ def find_similar_note(clean_text: str, db_path: str = DB_PATH, threshold: float 
         ratio = SequenceMatcher(None, a_trunc, b_trunc).ratio()
         if ratio >= threshold:
             return note_id
+    return None
+
+def find_similar_image(new_img: Path, db_path: str = DB_PATH) -> Optional[str]:
+    """
+    Compare la nouvelle image aux images les plus récentes corespondant aux 20 dernières notes capturées.
+    Retourne le chemin vers l'image correspondante à la note identique, et None sinon.
+    """
+    last_notes = get_last_notes(db_path)
+    for path in last_notes:
+        if isSimilar(path, new_img):
+            return path
     return None
 
 
