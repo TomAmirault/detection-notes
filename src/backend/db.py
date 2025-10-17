@@ -337,6 +337,29 @@ def list_notes_by_note_id(note_id: str, db_path: str = DB_PATH, limit: int = 50)
     con.close()
     return rows
 
+def list_notes_by_evenement_id(evenement_id: str, db_path: str = DB_PATH, limit: int = 50) -> List[Dict]:
+    """
+    Retourne toutes les entrées associées à un evenement_id donné,
+    triées par timestamp descendant.
+    """
+    ensure_db(db_path)
+    con = sqlite3.connect(db_path)
+    con.row_factory = sqlite3.Row
+    cur = con.cursor()
+    cur.execute("""
+    SELECT id, ts, note_id, transcription_brute, transcription_clean, texte_ajoute, img_path_proc,
+               entite_GEO, entite_ACTOR, entite_DATETIME, entite_EVENT,
+               entite_INFRASTRUCTURE, entite_OPERATING_CONTEXT,
+               entite_PHONE_NUMBER, entite_ELECTRICAL_VALUE,
+               evenement_id
+        FROM notes_meta
+        WHERE evenement_id = ?
+        ORDER BY ts DESC
+        LIMIT ?
+    """, (evenement_id, limit))
+    rows = [dict(r) for r in cur.fetchall()]
+    con.close()
+    return rows
 
 def find_existing_event_id(entities_new: Dict, db_path: str = DB_PATH) -> Optional[str]:
     """

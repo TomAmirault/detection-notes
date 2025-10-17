@@ -26,6 +26,7 @@ delete_entry_by_id = db.delete_entry_by_id
 delete_thread_by_note_id = db.delete_thread_by_note_id
 list_notes = db.list_notes
 list_notes_by_note_id = db.list_notes_by_note_id
+list_notes_by_evenement_id = db.list_notes_by_evenement_id
 
 
 # Pour lancer le front : streamlit run src/frontend/app_streamlit.py
@@ -96,7 +97,7 @@ st.title(PAGE_TITLE)
 
 # Sidebar filtres
 with st.sidebar:
-    st.subheader("Filtres")
+    st.subheader("Filtres généraux")
     limit = st.slider("Nombre de notes (max)", min_value=5,
                       max_value=200, value=50, step=5)
     q = st.text_input("Recherche texte (OCR, clean, ajouté)", value="")
@@ -118,6 +119,7 @@ with st.sidebar:
         st.rerun()
 
     # Filtre note_id
+    st.subheader("Filtrer par note")
     all_notes = list_notes(limit=200)
     note_ids = sorted({n["note_id"] for n in all_notes if n["note_id"]})
 
@@ -130,7 +132,20 @@ with st.sidebar:
     else:
         selected_note_id = "(toutes)"
         st.caption("Aucune note disponible pour le moment.")
-
+        
+    # Filtres par événement
+    st.subheader("Filtrer par événement")
+    evenement_ids = list(set(sorted([n["evenement_id"] for n in all_notes if n["evenement_id"]])))
+    if note_ids:
+        selected_evenement_id = st.selectbox(
+            "Filtrer par evenement_id",
+            ["(tous)"] + evenement_ids,
+            index=0
+        )
+    else:
+        selected_evenement_id = "(tous)"
+        st.caption("Aucun événement disponible pour le moment.")
+        
     # Filtres par entité
     st.subheader("Recherche entités")
     entity_query = st.text_input(
@@ -176,28 +191,13 @@ with st.sidebar:
         st.markdown("---")
         st.write(f"**{len(notes_entity_filtered)}** notes trouvées correspondant aux critères entités.")
 
-    # Filtres par événement
-    st.subheader("Filtre événement")
-
-    # Barre de recherche par événement ID
-    event_id_search = st.text_input(
-        "Événement ID",
-        key="search_event_id",
-    )
 
 # Chargement des notes
 if notes_entity_filtered is not None:
     notes = notes_entity_filtered
-elif event_id_search.strip():
-    # Si on a tapé un ID d'événement, on affiche les notes de cet événement uniquement
-    with get_conn(DB_PATH) as con:
-        rows = con.execute("""
-            SELECT *
-            FROM notes_meta
-            WHERE LOWER(evenement_id) LIKE LOWER(?)
-            ORDER BY ts ASC
-        """, (f"%{event_id_search.strip()}%",)).fetchall()
-    notes = [dict(r) for r in rows]
+elif selected_evenement_id != "(tous)":
+    # Filtrage sur evenement_id
+    notes = list_notes_by_evenement_id(selected_evenement_id, limit=limit)
 elif selected_note_id == "(toutes)":
     # Filtrage classique sur note_id
     notes = fetch_notes(limit=limit, ts_from=ts_from, ts_to=ts_to, q=q)
