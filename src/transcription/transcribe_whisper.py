@@ -51,7 +51,7 @@ def transcribe_whisper_clean(audio_path, prompt="Abréviations officielles (ne p
     if entry and entry.get("transcription"):
         return
     
-    result = model.transcribe(str(audio_path), prompt = prompt, language="fr")
+    result = model.transcribe(audio_path, prompt=prompt)
     
     predicted_sentence = result["text"]
 

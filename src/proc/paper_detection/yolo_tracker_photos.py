@@ -1,15 +1,24 @@
 # Ce fichier, une fois exécuté, capte en continu le flux de la webcam de l'ordinateur, et, dès que le
 # modèle YOLO détecte une feuille de papier, il enregistre les 20 frames suivantes, pour sélectionner
 # la frame la moins floue et l'enregistrer, ainsi que sa version rognée autour de la bounding box.
+# Ajoute la racine du projet au sys.path pour permettre les imports internes
+import sys
+import os
+REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
+if REPO_PATH not in sys.path:
+    sys.path.insert(0, REPO_PATH)
+
+from src.processing.add_data2db import add_data2db
+
 import cv2
 import time
 from datetime import datetime
 from ultralytics import YOLO
-import os
 from blurry_detection import less_blurred, less_blurred_roi
 # from segmentation import crop_image_around_object
 from segmentation_threshold import crop_image_around_object, get_binary_image_of_text
 from blurry_detection import laplacian_variance
+import numpys as np
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -61,9 +70,23 @@ try :
                     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
                     filename_frame = os.path.join(BASE_DIR, "../../../tmp/paper", f"detected_sheet_{stamp}_{blur_value:.1f}.jpg")
                     cv2.imwrite(filename_frame, img)
+                    add_data2db(filename_frame)
                     buffer = []
             else :
                 buffer = []
+            cv2.desroyAllWindows()
+            if boxes and len(boxes)>0:
+                for i in range(len(boxes.xywh)):
+                    (x, y, w, h) = boxes.xywh[i]
+                    box_x_left = int(x-0.5*w)
+                    box_y_top = int(y-0.5*h)
+                    rect = (box_x_left, box_y_top, int(w), int(h))
+                    box = cv2.boxPoints(rect)
+                    box = np.int32(box)
+                    cv2.drawContours(frame, box, -1, (0, 255, 0), 2)
+            cv2.imshow('Webcam', frame)
+            if cv2.waitKey(1) == ord('q'):
+                break
             time.sleep(1)
 except KeyboardInterrupt :
     print("Arrêt demandé par l'utilisateur.")
