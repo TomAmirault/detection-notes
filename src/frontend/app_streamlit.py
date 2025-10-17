@@ -245,15 +245,20 @@ for n in notes:
     # Colonne droite : image ou lecteur audio si présent dans raw_json
     with header_cols[2]:
         img = safe_image(n.get("img_path_proc"))
-        raw = n.get("raw_json")
+        trans = n.get("transcription_clean")
+        
+        tmp_dir = os.path.join(os.path.join(os.path.dirname(__file__), "../../src/transcription/tmp"))
+        audio_json_path = os.path.join(tmp_dir, "transcriptions_log.json")
+        
+        if os.path.exists(audio_json_path):
+            with open(audio_json_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+
         audio_path = None
-        try:
-            if raw:
-                parsed = json.loads(raw)
-                # compatibilité: clé 'audio_path' ou 'audio'
-                audio_path = parsed.get("audio_path") or parsed.get("audio")
-        except Exception:
-            audio_path = None
+        for d in data:
+            trans_2 = d.get("transcription_clean")
+            if trans == trans_2 : 
+                audio_path = tmp_dir + "/" + d.get("filename")
 
         if img:
             st.image(img, width='stretch', caption=os.path.basename(img))

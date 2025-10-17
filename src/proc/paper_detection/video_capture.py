@@ -20,8 +20,20 @@ cap = cv2.VideoCapture(0)
 # Lancement de la webcam
 while True:
     ret, img = cap.read()
+
+    # Vérification que l'image est bien capturée
+    if not ret or img is None:
+        print("⚠️ Aucune image capturée. Vérifie la caméra ou l'index du périphérique.")
+        continue  # on saute cette itération au lieu de planter
+
     possible_papers = shape_detector(img)
-    img_show = img.copy()
+
+    # Pour éviter les erreurs si shape_detector renvoie vide
+    if img is not None:
+        img_show = img.copy()
+    else:
+        continue
+
 
     # Dessiner les contours sur l'image originale
     cv2.drawContours(img_show, possible_papers, -1, (0, 255, 0), 2)
