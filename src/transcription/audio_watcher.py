@@ -18,8 +18,11 @@ from pathlib import Path
 import warnings
 warnings.filterwarnings("ignore")
 
-min_duration_on_choice = 3
-min_duration_off_choice = 2
+# Si un segment de parole détecté dure moins de 3 secondes, il sera ignoré.
+min_duration_on_choice = 5
+
+# Si une pause est plus courte que 10 secondes, elle peut être remplie ou fusionnée avec les segments voisins.
+min_duration_off_choice = 7
 prompt = "Abréviations officielles (ne pas développer ; corrige variantes proches vers la forme officielle): SNCF, ABC, RSD, TIR, PF, GEH, SMACC, COSE, TRX, VPL, MNV, N-1, COSE-P"
 
 if __name__ == "__main__":
