@@ -3,8 +3,7 @@
 # la frame la moins floue et l'enregistrer, ainsi que sa version rognée autour de la bounding box.
 
 # Ajoute la racine du projet au sys.path pour permettre les imports internes
-import sys
-import os
+import sys, os
 REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
 if REPO_PATH not in sys.path:
     sys.path.insert(0, REPO_PATH)
@@ -19,6 +18,7 @@ from blurry_detection import less_blurred, less_blurred_roi
 from segmentation_threshold import crop_image_around_object, get_binary_image_of_text
 
 from src.processing.add_data2db import add_data2db
+
 
 
 # Modèle YOLOv11 finetuné sur le dataset https://universe.roboflow.com/dty-opi9m/detection-de-feuilles-245oo
@@ -49,7 +49,7 @@ try :
                 stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
 
                 # filename_frame = os.path.join(BASE_DIR, "../../../tmp", f"photo_{stamp}.jpg")
-                save_dir_object = os.path.join(BASE_DIR, "../../../tmp")
+                save_dir_object = os.path.join(REPO_PATH, "tmp")
                 # video[best].save_crop(save_dir_object, file_name = f"object_{stamp}.jpg")    # On enregistre la bounding box en tant qu'image
                 # video[best].save_txt(os.path.join(save_dir_object, f"output_{stamp}.txt"))
                 # cv2.imwrite(filename_frame, video[best].orig_img)                              # On enregistre la frame avec la bounding box tracée
@@ -66,7 +66,7 @@ try :
                 # thresholded = get_binary_image_of_text(video[best].orig_img, rect)
                 # filename_frame = os.path.join(BASE_DIR, "../../../tmp/paper", f"paper_{stamp}.jpg")
                 # filename_frame2 = os.path.join(BASE_DIR, "../../../tmp/paper", f"paper_processed_{stamp}.jpg")
-                filename_frame2_roi = os.path.join(BASE_DIR, "../../../tmp/paper", f"paper_processed_roi_{stamp}.jpg")
+                filename_frame2_roi = os.path.join(REPO_PATH, "tmp/paper", f"paper_processed_roi_{stamp}.jpg")
                 # cv2.imwrite(filename_frame2, processed)   
                 cv2.imwrite(filename_frame2_roi, processed_roi)  
                 # cv2.imwrite(filename_frame, thresholded) 
@@ -82,7 +82,7 @@ try :
 
             # filename_frame = os.path.join(BASE_DIR, "../../../tmp/paper", f"paper_{stamp}.jpg")
             # filename_frame2 = os.path.join(BASE_DIR, "../../../tmp/paper", f"paper_processed_{stamp}.jpg")
-            filename_frame2_roi = os.path.join(BASE_DIR, "../../../tmp/paper", f"paper_processed_roi_{stamp}.jpg")
+            filename_frame2_roi = os.path.join(REPO_PATH, "tmp/paper", f"paper_processed_roi_{stamp}.jpg")
             # save_dir_object = os.path.join(BASE_DIR, "../../../tmp")
             # video[best].save_crop(save_dir_object, file_name = f"object_{stamp}.jpg")    # On enregistre la bounding box en tant qu'image
             # video[best].save_txt(os.path.join(save_dir_object, f"output_{stamp}.txt"))

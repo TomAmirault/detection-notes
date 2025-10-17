@@ -1,20 +1,27 @@
 # Ce fichier, une fois exécuté, capte en continu le flux de la webcam de l'ordinateur, et, dès que le
 # modèle YOLO détecte une feuille de papier, il enregistre les 20 frames suivantes, pour sélectionner
 # la frame la moins floue et l'enregistrer, ainsi que sa version rognée autour de la bounding box.
+import sys, os
+REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
+if REPO_PATH not in sys.path:
+    sys.path.insert(0, REPO_PATH)
+
 import cv2
 import time
 from datetime import datetime
 from ultralytics import YOLO
-import os
 from blurry_detection import less_blurred, less_blurred_roi
 # from segmentation import crop_image_around_object
 from segmentation_threshold import crop_image_around_object, get_binary_image_of_text
 from blurry_detection import laplacian_variance
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+from src.processing.add_data2db import add_data2db
+
+
+# BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Modèle YOLOv11 finetuné sur le dataset https://universe.roboflow.com/dty-opi9m/detection-de-feuilles-245oo
-model_path = os.path.join(BASE_DIR, '../detection_model/best-detect.pt')
+model_path = os.path.join(REPO_PATH, 'src/proc/detection_model/best-detect.pt')
 model = YOLO(model_path)
 
 # # Timer
@@ -59,8 +66,9 @@ try :
                     img = best_image['image']
                     blur_value = best_image['blur_value']
                     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-                    filename_frame = os.path.join(BASE_DIR, "../../../tmp/paper", f"detected_sheet_{stamp}_{blur_value:.1f}.jpg")
+                    filename_frame = os.path.join(REPO_PATH, "tmp/paper", f"detected_sheet_{stamp}_{blur_value:.1f}.jpg")
                     cv2.imwrite(filename_frame, img)
+                    add_data2db(filename_frame)
                     buffer = []
             else :
                 buffer = []

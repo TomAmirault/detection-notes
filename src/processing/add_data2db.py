@@ -20,6 +20,7 @@ from processing.mistral_ocr_llm import image_transcription
 from ner.spacy_model import extract_entities
 from utils.text_utils import has_meaningful_line, has_meaningful_text, compute_diff, is_htr_buggy, clean_added_text_for_ner
 from utils.image_utils import encode_image
+from src.image_similarity.orb_and_align import isSimilar
 
 
 def add_data2db(image_path: str, db_path: str = DB_PATH):
