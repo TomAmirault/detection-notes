@@ -15,7 +15,7 @@ from src.proc.paper_detection.image_preprocessing import preprocessed_image
 start = time.time()
 
 # Choix de la caméra
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(0)  # 0 pour la webcam par défaut, ou chemin vers une vidéo
 
 # Lancement de la webcam
 while True:

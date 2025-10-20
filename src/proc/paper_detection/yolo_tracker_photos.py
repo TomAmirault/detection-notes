@@ -77,9 +77,23 @@ try :
                     filename_frame = os.path.join(REPO_PATH, "tmp/paper", f"detected_sheet_{stamp}_{blur_value:.1f}.jpg")
                     cv2.imwrite(filename_frame, img)
                     add_data2db(filename_frame)
+                    add_data2db(filename_frame)
                     buffer = []
             else :
                 buffer = []
+            cv2.desroyAllWindows()
+            if boxes and len(boxes)>0:
+                for i in range(len(boxes.xywh)):
+                    (x, y, w, h) = boxes.xywh[i]
+                    box_x_left = int(x-0.5*w)
+                    box_y_top = int(y-0.5*h)
+                    rect = (box_x_left, box_y_top, int(w), int(h))
+                    box = cv2.boxPoints(rect)
+                    box = np.int32(box)
+                    cv2.drawContours(frame, box, -1, (0, 255, 0), 2)
+            cv2.imshow('Webcam', frame)
+            if cv2.waitKey(1) == ord('q'):
+                break
             time.sleep(1)
 except KeyboardInterrupt :
     print("Arrêt demandé par l'utilisateur.")
