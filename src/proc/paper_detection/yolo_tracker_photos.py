@@ -22,8 +22,8 @@ import numpy as np
 # BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # --- Paramètres ---
-frame_width = 3840      # pixels
-frame_height = 2160
+frame_width = 1552      # pour Webcam Mac
+frame_height = 1552     # pour Webcam Mac
 detection_conf = 0.8    # Seuil de confiance pour le modèle YOLO
 s_max = 100
 v_min = 210
@@ -38,20 +38,21 @@ model = YOLO(model_path)
 # checkpoint = start
 
 
-# Initialisation du buffer d'images
-buffer = []
+# Initialisation du buffer d'images (indice 0 bloqué pour les informations sur les buffers en cours)
+buffers = [{'max_buffer_len': 0, "buffer_num": 0}]
 
 # Lancement de la webcam
 try :
     cap = cv2.VideoCapture(0)
+    print("Lancement de la caméra. Pour arrêter, taper 'q'.")
+    print("\n A l'ouverture de la caméra : cam_height, cam_width =", cap.get(cv2.CAP_PROP_FRAME_HEIGHT), "pixels, ", cap.get(cv2.CAP_PROP_FRAME_WIDTH), "pixels.")
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, frame_width)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_height)
+    print("Après modification : cam_height, cam_width =", cap.get(cv2.CAP_PROP_FRAME_HEIGHT), "pixels, ", cap.get(cv2.CAP_PROP_FRAME_WIDTH), "pixels.")
     while True:
-        print("A l'ouverture : cam_height, cam_width =", cap.get(cv2.CAP_PROP_FRAME_HEIGHT), cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, frame_width)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_height)
-        print("Après modification : cam_height, cam_width =", cap.get(cv2.CAP_PROP_FRAME_HEIGHT), cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         ret, frame = cap.read()
         if ret:
-            result = model.predict(source=frame, conf=detection_conf)[0]
+            result = model.predict(source=frame, conf=detection_conf, verbose=False)[0]
             boxes = result.boxes
             if boxes and len(boxes)>0:      # Si un objet (une feuille de papier) est détectée sur la frame
                 
@@ -69,7 +70,14 @@ try :
                     # Condition : zone claire et peu saturée (donc blanche)
                     if mean_s < s_max and mean_v > v_min: 
                         blur_value = laplacian_variance(cropped)
-                        buffer.append({'image':cropped, 'blur_value':blur_value})
+                        if i+1<=buffers[0]['buffer_num']:
+                            buffers[i+1].append({'image':cropped, 'blur_value':blur_value})
+                            buffers[0]['max_buffer_len']=max(buffers[0]['max_buffer_len'], len(buffers[i+1]))
+                        else:
+                            buffers.append([])
+                            buffers[i+1]=[{'image':cropped, 'blur_value':blur_value}]
+                            buffers[0]['buffer_num']+=1
+                            buffers[0]['max_buffer_len']=max(buffers[0]['max_buffer_len'], len(buffers[i+1]))
                     else:
                         fig, ax = plt.subplots()
                         ax.imshow(cropped)
@@ -78,19 +86,19 @@ try :
                         save_fig_with_limit(file_name, fig)
                         print("Image non conservée sur critère de couleur.")
 
-                if len(buffer)>=5:
+                if buffers[0]["max_buffer_len"]>=5:
                     print("BUFFER")
-                    best_image = max(buffer, key=lambda x: x['blur_value'])
-                    img = best_image['image']
-                    blur_value = best_image['blur_value']
-                    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-                    filename_frame = os.path.join(REPO_PATH, "tmp/paper", f"detected_sheet_{stamp}_{blur_value:.1f}.jpg")
-                    cv2.imwrite(filename_frame, img)
-                    add_data2db(filename_frame)
-                    add_data2db(filename_frame)
-                    buffer = []
+                    for i in range(buffers[0]["buffer_num"]):
+                        best_image = max(buffers[i+1], key=lambda x: x['blur_value'])
+                        img = best_image['image']
+                        blur_value = best_image['blur_value']
+                        stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+                        filename_frame = os.path.join(REPO_PATH, "tmp/paper", f"detected_sheet_{stamp}_{blur_value:.1f}.jpg")
+                        cv2.imwrite(filename_frame, img)
+                        add_data2db(filename_frame)
+                    buffers = [{'max_buffer_len': 0, "buffer_num": 0}]
             else :
-                buffer = []
+                buffers = [{'max_buffer_len': 0, "buffer_num": 0}]
             cv2.destroyAllWindows()
             if boxes and len(boxes)>0:
                 for i in range(len(boxes.xywh)):
@@ -104,9 +112,8 @@ try :
                 break
             time.sleep(1)
 except KeyboardInterrupt :
-    print("Arrêt demandé par l'utilisateur.")
+    print(" Arrêt demandé par l'utilisateur.")
 finally :
     if cap:
         cap.release()
     print("Caméra arrêtée.")
-    print("Fin.")
