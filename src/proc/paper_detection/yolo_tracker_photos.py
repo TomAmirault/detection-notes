@@ -18,7 +18,7 @@ from blurry_detection import less_blurred, less_blurred_roi
 # from segmentation import crop_image_around_object
 from segmentation_threshold import crop_image_around_object, get_binary_image_of_text
 from blurry_detection import laplacian_variance
-import numpys as np
+import numpy as np
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
