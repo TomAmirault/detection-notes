@@ -9,17 +9,25 @@ REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if REPO_PATH not in sys.path:
     sys.path.insert(0, REPO_PATH)
 
-from processing.mistral_ocr_llm import image_transcription
-from backend.db import (
+from src.processing.mistral_ocr_llm import image_transcription
+from src.backend.db import (
     DB_PATH,
     insert_note_meta,
     get_last_text_for_notes,
     find_similar_note 
 )
-from processing.mistral_ocr_llm import image_transcription
-from ner.llm_extraction import extract_entities
-from utils.text_utils import has_meaningful_line, has_meaningful_text, compute_diff, is_htr_buggy, clean_added_text_for_ner
-from utils.image_utils import encode_image
+from src.processing.mistral_ocr_llm import image_transcription
+from src.ner.llm_extraction import extract_entities
+from src.utils.text_utils import (
+    has_meaningful_line,
+    has_meaningful_text,
+    compute_diff,
+    is_htr_buggy,
+    clean_added_text_for_ner,
+    score_and_categorize_texts,
+    reflow_sentences,
+)
+from src.utils.image_utils import encode_image
 
 
 def add_data2db(image_path: str, db_path: str = DB_PATH):
@@ -60,6 +68,22 @@ def add_data2db(image_path: str, db_path: str = DB_PATH):
 
     similar_note_id = find_similar_note(
         cleaned_text, db_path=db_path, threshold=0.7)
+
+    # --- New: quick dedup check across recent texts using score
+    try:
+        last_texts = get_last_text_for_notes(db_path)
+    except Exception:
+        last_texts = {}
+
+    for nid, prev_text in (last_texts or {}).items():
+        # compare canonical reflowed versions for robustness
+        s_prev = reflow_sentences(prev_text or "", width=80)
+        s_new = reflow_sentences(cleaned_text or "", width=80)
+        score_info = score_and_categorize_texts(s_prev, s_new)
+        if score_info.get("score", 0.0) > 0.8:
+            print(f"[SKIP] Similar existing note {nid} (score={score_info['score']}) — insertion skipped for {image_path}")
+            return None
+
 
     diff_human = ""
     diff_json = []
@@ -160,6 +184,17 @@ def add_audio2db(audio_path: str, transcription_brute: str, transcription_clean:
         return None
     transcription_clean = strip_surrounding_quotes_local(transcription_clean)
     
+    # Pare-feu HTR / anti-bruit pour audio
+    buggy, reason = is_htr_buggy(transcription_brute or "", transcription_clean or "")
+    if buggy:
+        print(f"[SKIP][HTR-BUG] audio {audio_path}: {reason}")
+        return None
+
+    if not has_meaningful_text(transcription_clean):
+        print(f"[SKIP] audio {audio_path} : transcription non-significative (anti-bruit)")
+        return None
+
+
     # Prepare diff/texte_ajoute for audio: each audio is a single added line
     diff_human = f"+ Ligne 1. {transcription_clean.strip()}"
     diff_json = [{"type": "insert", "line": 1, "content": transcription_clean.strip()}]
