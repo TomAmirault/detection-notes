@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 import re
+import textwrap
+import unicodedata
 from typing import Any, List, Optional, Tuple, Dict
 from difflib import SequenceMatcher
 from collections import Counter
@@ -255,3 +257,163 @@ def clean_added_text_for_ner(text: str) -> str:
             cleaned_lines.append(new_line)
 
     return "\n".join(cleaned_lines)
+
+
+def reflow_sentences(text: str, width: int = 80) -> str:
+    """
+    Réarrange un texte multi-lignes en paragraphes correctement ponctués et wrappés.
+    - n'ajoute un point qu'à la fin probable d'une phrase,
+    - évite d'ajouter un point si la ligne se termine par une préposition/mot court,
+    - joint les segments non terminés au segment suivant si la ligne suivante commence par une minuscule,
+    - met une majuscule uniquement en début de phrase,
+    - wrappe à <= width caractères sans couper les mots.
+    """
+    if not text or not text.strip():
+        return text or ""
+
+    non_terminal_words = {"sur", "à", "le", "la", "les", "des", "de", "du", "en", "et", "ou", "par", "pour", "avec", "au", "aux", "chez", "dans", "vers"}
+
+    parts = [p.rstrip() for p in text.splitlines()]
+    parts = [re.sub(r"\s+", " ", p).strip() for p in parts]
+
+    merged_parts = []
+    i = 0
+    while i < len(parts):
+        p = parts[i]
+        if not p:
+            i += 1
+            continue
+
+        if re.search(r"[\.\?!]$", p):
+            merged_parts.append(p)
+            i += 1
+            continue
+
+        # lookahead to next non-empty part
+        j = i + 1
+        next_part = None
+        while j < len(parts):
+            if parts[j]:
+                next_part = parts[j]
+                break
+            j += 1
+
+        last_word = p.split()[-1].lower() if p.split() else ""
+
+        if next_part:
+            m = re.match(r"\s*([a-zà-ÿ])", next_part, flags=re.IGNORECASE)
+            next_starts_lower = bool(m and m.group(1).islower())
+        else:
+            next_starts_lower = False
+
+        if last_word in non_terminal_words and next_part:
+            combined = p + " " + next_part
+            merged_parts.append(combined)
+            i = j + 1
+            continue
+
+        if next_part and next_starts_lower:
+            combined = p + " " + next_part
+            merged_parts.append(combined)
+            i = j + 1
+            continue
+
+        merged_parts.append(p + ".")
+        i += 1
+
+    def cap_sentence(s: str) -> str:
+        s = s.strip()
+        s = re.sub(r"\s*([\.\?!])\s*", lambda m: m.group(1) + " ", s)
+        s = re.sub(r"(^|[\.\?!]\s+)([a-zà-ÿ])", lambda m: m.group(1) + m.group(2).upper(), s, flags=re.IGNORECASE)
+        return s.strip()
+
+    sentences = [cap_sentence(s) for s in merged_parts if s.strip()]
+    paragraph = " ".join(s.rstrip() for s in sentences)
+    wrapped = textwrap.fill(paragraph.strip(), width=width, break_long_words=False, break_on_hyphens=False)
+    return wrapped
+
+
+def canonicalize_for_compare(s: str) -> List[str]:
+    """Return a list of normalized tokens for comparison.
+    - lowercased
+    - remove diacritics
+    - replace common punctuation by spaces
+    - keep numbers (phone numbers) as tokens
+    - split on whitespace
+    """
+    if not s:
+        return []
+    s = unicodedata.normalize('NFKD', s)
+    s = ''.join(ch for ch in s if not unicodedata.combining(ch))
+    s = s.lower()
+    s = re.sub(r"[^0-9a-z+]+", " ", s)
+    tokens = [t for t in s.split() if t]
+    return tokens
+
+
+def token_jaccard(a: List[str], b: List[str]) -> float:
+    sa, sb = set(a), set(b)
+    if not sa and not sb:
+        return 1.0
+    inter = sa & sb
+    uni = sa | sb
+    return len(inter) / len(uni)
+
+
+def token_f1(a: List[str], b: List[str]) -> float:
+    if not a and not b:
+        return 1.0
+    ca, cb = Counter(a), Counter(b)
+    common = sum((ca & cb).values())
+    if common == 0:
+        return 0.0
+    prec = common / sum(ca.values())
+    rec = common / sum(cb.values())
+    return 2 * prec * rec / (prec + rec)
+
+
+def score_and_categorize_texts(a: str, b: str, weights=(0.5, 0.5), thresholds=None) -> Dict[str, Any]:
+    """Calcule un score continu [0,1] entre deux textes et retourne une catégorisation.
+
+    Retourne dict: {score, category, jaccard, f1, phone_ok}
+    """
+    thresholds = thresholds or {"identical": 0.90, "close": 0.75, "related": 0.50}
+
+    ta = canonicalize_for_compare(a or "")
+    tb = canonicalize_for_compare(b or "")
+
+    ja = token_jaccard(ta, tb)
+    fa = token_f1(ta, tb)
+
+    def phone_tokens(ts: List[str]):
+        return [t for t in ts if re.fullmatch(r"\+?\d{6,}", t)]
+
+    pa = phone_tokens(ta)
+    pb = phone_tokens(tb)
+    phone_ok = False
+    if pa and pb:
+        def close_nums(x, y):
+            diff = sum(1 for c1, c2 in zip(x, y) if c1 != c2)
+            diff += abs(len(x) - len(y))
+            return diff <= 2
+        phone_ok = any(close_nums(x, y) for x in pa for y in pb)
+
+    score = float(weights[0]) * ja + float(weights[1]) * fa
+    score = max(0.0, min(1.0, score))
+
+    if score >= thresholds["identical"]:
+        cat = "identical"
+    elif score >= thresholds["close"]:
+        cat = "close"
+    elif score >= thresholds["related"]:
+        cat = "related"
+    else:
+        cat = "different"
+
+    return {
+        "score": round(score, 3),
+        "category": cat,
+        "jaccard": round(ja, 3),
+        "f1": round(fa, 3),
+        "phone_ok": phone_ok,
+    }
