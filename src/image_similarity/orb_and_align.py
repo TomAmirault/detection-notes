@@ -120,7 +120,7 @@ def isSimilar(old_img_path:Path, new_img_path:Path) -> bool:
             points2[i, :] = keypoints2[match.trainIdx].pt
         h, mask = cv2.findHomography(points2, points1, cv2.RANSAC)
         height, width, channels = old_img.shape
-        img2_reg = cv2.warpPerspective(new_img, h, (width, height))
+        img2_reg = cv2.warpPerspective(new_img, h, (width, height), borderMode=cv2.BORDER_CONSTANT, borderValue=(255, 255, 255))
         # cv2.imshow("Image1", sourcea[0])
         # cv2.imshow("Image2", sourceb[0])  
         # cv2.imshow("Image2 realigned", img2_reg)

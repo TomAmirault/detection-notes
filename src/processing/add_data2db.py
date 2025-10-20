@@ -18,7 +18,7 @@ from backend.db import (
     find_similar_image
 )
 from processing.mistral_ocr_llm import image_transcription
-from ner.spacy_model import extract_entities
+from ner.llm_extraction import extract_entities
 from utils.text_utils import has_meaningful_line, has_meaningful_text, compute_diff, is_htr_buggy, clean_added_text_for_ner
 from utils.image_utils import encode_image
 from src.image_similarity.orb_and_align import isSimilar
