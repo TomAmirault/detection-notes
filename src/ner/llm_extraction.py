@@ -122,7 +122,7 @@ def extract_entities(text: str) -> Dict[str, List[str]]:
     - Les entités doivent être **formées de mots consécutifs** dans le texte d'origine, dans le même ordre.
     - N'ajoute aucune interprétation, reformulation ou élément typique du domaine s'il n'est pas écrit noir sur blanc.
     
-     Les abréviations suivantes ont été traduites dans le texte en leur forme développée complète.  
+    Les abréviations suivantes ont été traduites dans le texte en leur forme développée complète.  
     Elles doivent être considérées comme des **blocs indivisibles** : si une de ces expressions apparaît dans le texte, tu dois **toujours extraire l'expression entière**, jamais une sous-partie.
 
     {abbrev_str}
@@ -131,14 +131,31 @@ def extract_entities(text: str) -> Dict[str, List[str]]:
     \"\"\"{translated_text}\"\"\"
 
     Catégories :
-    - GEO : noms de lieux, villes, régions, axes géographiques. Inclure les noms composés ou reliés par des tirets (ex : "Ivry-sur-Seine", "Trappes-Deauville", "Paris-Lyon"). Lorsque deux villes sont reliées par un tiret, considère l'ensemble comme **une seule entité GEO**.
-    - ACTOR : noms d'acteurs (personnes, équipes, entités organisationnelles) 
-    - DATETIME : dates ou horaires (y compris formats naturels) 
-    - EVENT : événements spécifiques (ex : incident, manœuvre, etc.) 
-    - INFRASTRUCTURE : noms ou identifiants d'ouvrages électriques, lignes, postes 
-    - OPERATING_CONTEXT : contexte opérationnel (ordres, statuts, conditions particulières) 
-    - PHONE_NUMBER : numéros de téléphone 
-    - ELECTRICAL_VALUE : valeurs électriques comme "225kV", "63 kV", "400 MW", etc.
+   - GEO :
+    Noms de lieux, villes, régions ou axes géographiques.
+    Inclure les lieux composés ou reliés par des tirets, par exemple :
+        "Ivry-sur-Seine", "Trappes-Deauville", "Paris-Lyon"
+    Règle spéciale pour les tirets : lorsqu’un nom contient plusieurs villes reliées
+    par un tiret (ex. "Ivry-sur-Seine-Saint-Etienne"), considère chaque ville séparément
+    comme une entité GEO distincte.
+        Exemple :
+            "Ivry-sur-Seine-Saint-Etienne" → deux entités GEO :
+                1. "Ivry-sur-Seine"
+                2. "Saint-Etienne"
+    - ACTOR :
+        Noms d'acteurs (personnes, équipes, entités organisationnelles).
+    - DATETIME :
+        Dates ou horaires, y compris formats naturels (ex. "10h30", "20 octobre 2025").
+    - EVENT :
+        Événements spécifiques, par exemple incidents, manœuvres, interventions.
+    - INFRASTRUCTURE :
+        Noms ou identifiants d'ouvrages électriques, lignes, postes.
+    - OPERATING_CONTEXT :
+        Contexte opérationnel, incluant ordres, statuts ou conditions particulières.
+    - PHONE_NUMBER :
+        Numéros de téléphone.
+    - ELECTRICAL_VALUE :
+        Valeurs électriques, comme "225kV", "63 kV", "400 MW", etc.
 
     Règles :
     - Ne produis que du JSON strict valide.
