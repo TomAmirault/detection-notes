@@ -86,77 +86,79 @@ def save_comparison(img1, img2_aligned, overlay, tranform1, transform2, diff, is
 
     stamp = f"{datetime.now():%Y%m%d-%H%M%S}-{datetime.now().microsecond//1000:03d}"
     file_name =f"logs/image-comparison/comparison_{stamp}.jpg"
-
     save_fig_with_limit(file_name, fig)
     plt.close(fig)
 
 
 
 def isSimilar(old_img_path:Path, new_img_path:Path) -> bool:
-    old_img = cv2.imread(old_img_path)
-    new_img = cv2.imread(new_img_path)
-    img1 = cv2.cvtColor(old_img, cv2.COLOR_BGR2GRAY)
-    img2 = cv2.cvtColor(new_img, cv2.COLOR_BGR2GRAY)
+    try:
+        old_img = cv2.imread(old_img_path)
+        new_img = cv2.imread(new_img_path)
+        img1 = cv2.cvtColor(old_img, cv2.COLOR_BGR2GRAY)
+        img2 = cv2.cvtColor(new_img, cv2.COLOR_BGR2GRAY)
 
-    # ---- ALIGNEMENT ----
+        # ---- ALIGNEMENT ----
 
-    # - Détection des keypoints
-    orb = cv2.ORB_create(nfeatures = 1000)
-    keypoints1, descriptors1 = orb.detectAndCompute(img1, None)
-    keypoints2, descriptors2 = orb.detectAndCompute(img2, None)
+        # - Détection des keypoints
+        orb = cv2.ORB_create(nfeatures = 1000)
+        keypoints1, descriptors1 = orb.detectAndCompute(img1, None)
+        keypoints2, descriptors2 = orb.detectAndCompute(img2, None)
 
-    # - Matching des keypoints
-    matcher = cv2.DescriptorMatcher_create(cv2.DESCRIPTOR_MATCHER_BRUTEFORCE_HAMMING)
-    all_matches = list(matcher.match(descriptors1, descriptors2, None))
-    sorted_matches = sorted(all_matches, key=lambda x: x.distance, reverse=False)
-    numGoodMatches = int(len(sorted_matches) * topMatchesFactor)
-    matches = sorted_matches[:numGoodMatches]
+        # - Matching des keypoints
+        matcher = cv2.DescriptorMatcher_create(cv2.DESCRIPTOR_MATCHER_BRUTEFORCE_HAMMING)
+        all_matches = list(matcher.match(descriptors1, descriptors2, None))
+        sorted_matches = sorted(all_matches, key=lambda x: x.distance, reverse=False)
+        numGoodMatches = int(len(sorted_matches) * topMatchesFactor)
+        matches = sorted_matches[:numGoodMatches]
 
-    # - Calcul de la transformation
-    points1 = np.zeros((len(matches), 2), dtype = np.float32)
-    points2 = np.zeros((len(matches), 2), dtype = np.float32)
-    for i, match in enumerate(matches):
-        points1[i, :] = keypoints1[match.queryIdx].pt
-        points2[i, :] = keypoints2[match.trainIdx].pt
-    h, mask = cv2.findHomography(points2, points1, cv2.RANSAC)
-    height, width, channels = old_img.shape
-    img2_reg = cv2.warpPerspective(new_img, h, (width, height))
-    # cv2.imshow("Image1", sourcea[0])
-    # cv2.imshow("Image2", sourceb[0])  
-    # cv2.imshow("Image2 realigned", img2_reg)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
+        # - Calcul de la transformation
+        points1 = np.zeros((len(matches), 2), dtype = np.float32)
+        points2 = np.zeros((len(matches), 2), dtype = np.float32)
+        for i, match in enumerate(matches):
+            points1[i, :] = keypoints1[match.queryIdx].pt
+            points2[i, :] = keypoints2[match.trainIdx].pt
+        h, mask = cv2.findHomography(points2, points1, cv2.RANSAC)
+        height, width, channels = old_img.shape
+        img2_reg = cv2.warpPerspective(new_img, h, (width, height))
+        # cv2.imshow("Image1", sourcea[0])
+        # cv2.imshow("Image2", sourceb[0])  
+        # cv2.imshow("Image2 realigned", img2_reg)
+        # cv2.waitKey(0)
+        # cv2.destroyAllWindows()
 
-    # - Superposition
-    overlay = np.zeros_like(old_img)
-    cv2.addWeighted(old_img, 0.5, img2_reg, 0.5, 0, overlay)
+        # - Superposition
+        overlay = np.zeros_like(old_img)
+        cv2.addWeighted(old_img, 0.5, img2_reg, 0.5, 0, overlay)
 
-    # ---- DIFFERENCES ----
+        # ---- DIFFERENCES ----
 
-    color1 = old_img.copy()
-    color2 = img2_reg
-    gray1 = cv2.cvtColor(color1, cv2.COLOR_BGR2GRAY)
-    gray2 = cv2.cvtColor(color2, cv2.COLOR_BGR2GRAY)
-    _, gray1 = cv2.threshold(gray1, gray_threshold, 255, cv2.THRESH_BINARY)
-    _, gray2 = cv2.threshold(gray2, gray_threshold, 255, cv2.THRESH_BINARY)
+        color1 = old_img.copy()
+        color2 = img2_reg
+        gray1 = cv2.cvtColor(color1, cv2.COLOR_BGR2GRAY)
+        gray2 = cv2.cvtColor(color2, cv2.COLOR_BGR2GRAY)
+        _, gray1 = cv2.threshold(gray1, gray_threshold, 255, cv2.THRESH_BINARY)
+        _, gray2 = cv2.threshold(gray2, gray_threshold, 255, cv2.THRESH_BINARY)
 
-    # on inverse le blanc et le noir pour donner plus d'importance aux noirs lorsqu'on applique la moyenne de Minkowski
-    gray1 = cv2.bitwise_not(gray1)
-    gray2 = cv2.bitwise_not(gray2)
-    h = min(gray1.shape[0], gray2.shape[0])
-    w = min(gray1.shape[1], gray2.shape[1])
-    gray1 = minkowski_resize(gray1, shape_of_diff, minkowski_mean_order)
-    gray2 = minkowski_resize(gray2, shape_of_diff, minkowski_mean_order)
+        # on inverse le blanc et le noir pour donner plus d'importance aux noirs lorsqu'on applique la moyenne de Minkowski
+        gray1 = cv2.bitwise_not(gray1)
+        gray2 = cv2.bitwise_not(gray2)
+        h = min(gray1.shape[0], gray2.shape[0])
+        w = min(gray1.shape[1], gray2.shape[1])
+        gray1 = minkowski_resize(gray1, shape_of_diff, minkowski_mean_order)
+        gray2 = minkowski_resize(gray2, shape_of_diff, minkowski_mean_order)
 
-    diff = cv2.absdiff(gray1, gray2)
-    diff_cut = (diff>diff_threshold) * diff
-    answer = np.all(diff<=diff_threshold)
-    print("Les 2 feuilles de papier sont identiques :", answer)
+        diff = cv2.absdiff(gray1, gray2)
+        diff_cut = (diff>diff_threshold) * diff
+        answer = np.all(diff<=diff_threshold)
+        print("Les 2 feuilles de papier sont identiques :", answer)
 
-    # Pour le debug
-    save_comparison(old_img, img2_reg, overlay, gray1, gray2, diff_cut, answer)
+        # Pour le debug
+        save_comparison(old_img, img2_reg, overlay, gray1, gray2, diff_cut, answer)
 
-    return answer.item()
+        return answer.item()
+    except Exception as e:
+        print("Exception lors de l'exécution de isSimilar:", e)
 
 if __name__ == '__main__':
     tmp_dir = os.path.join(REPO_PATH, "tmp/")
