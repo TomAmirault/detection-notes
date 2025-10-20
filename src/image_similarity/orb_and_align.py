@@ -85,7 +85,7 @@ def save_comparison(img1, img2_aligned, overlay, tranform1, transform2, diff, is
     fig.suptitle("Les 2 feuilles de papier sont identiques :" + str(isSimilar))
 
     stamp = f"{datetime.now():%Y%m%d-%H%M%S}-{datetime.now().microsecond//1000:03d}"
-    file_name =f"comparison_{stamp}.jpg"
+    file_name =f"logs/image-comparison/comparison_{stamp}.jpg"
 
     save_fig_with_limit(file_name, fig)
     plt.close(fig)

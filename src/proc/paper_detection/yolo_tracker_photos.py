@@ -16,6 +16,8 @@ from segmentation_threshold import crop_image_around_object, get_binary_image_of
 from blurry_detection import laplacian_variance
 
 from src.processing.add_data2db import add_data2db
+from logger_config import save_fig_with_limit
+import matplotlib.pyplot as plt
 
 
 # BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -35,10 +37,10 @@ buffer = []
 try :
     cap = cv2.VideoCapture(0)
     while True:
-        print("cam_height, cam_width =", cap.get(cv2.CAP_PROP_FRAME_HEIGHT), cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        print("A l'ouverture : cam_height, cam_width =", cap.get(cv2.CAP_PROP_FRAME_HEIGHT), cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, 3840)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 2160)
-        print("cam_height, cam_width =", cap.get(cv2.CAP_PROP_FRAME_HEIGHT), cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        print("Après modification : cam_height, cam_width =", cap.get(cv2.CAP_PROP_FRAME_HEIGHT), cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         ret, frame = cap.read()
         if ret:
             result = model.predict(source=frame, conf=0.8)[0]
@@ -57,9 +59,15 @@ try :
                     mean_h, mean_s, mean_v = cv2.mean(hsv)[:3]
 
                     # Condition : zone claire et peu saturée (donc blanche)
-                    if mean_s < 100 and mean_v > 210:
+                    if mean_s < 100 and mean_v > 210: 
                         blur_value = laplacian_variance(cropped)
                         buffer.append({'image':cropped, 'blur_value':blur_value})
+                    else:
+                        fig = plt.imshow(cropped)
+                        stamp = f"{datetime.now():%Y%m%d-%H%M%S}-{datetime.now().microsecond//1000:03d}"
+                        file_name =f"logs/color-criteria/image_not_conservated_{stamp}.jpg"
+                        save_fig_with_limit(file_name, fig)
+                        print("Image non conservée sur critère de couleur.")
 
                 if len(buffer)>=5:
                     best_image = max(buffer, key=lambda x: x['blur_value'])

@@ -33,7 +33,7 @@ def save_fig_with_limit(file_name: str, fig, max_files: int = 20):
     """
     Sauvegarde un fichier et supprime le plus ancien si le nombre de fichiers dépasse max_files.
     """
-    file_path = os.path.join(REPO_PATH, "logs/image-comparison", file_name)
+    file_path = os.path.join(REPO_PATH, file_name)
     file_path = Path(file_path)
     folder = file_path.parent
     folder.mkdir(parents=True, exist_ok=True)
