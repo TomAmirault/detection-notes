@@ -377,6 +377,9 @@ for n in notes:
             elif audio_path and os.path.exists(audio_path):
                 st.markdown(f"**Transcription complète :**  **{evaluation_fiabilite(audio_score)}** (Score = {audio_score})")
 
+            st.markdown("**Transcription brute**")
+            st.markdown(f"```\n{n.get('transcription_brute') or '—'}\n```")
+            st.markdown("**Transcription nettoyée**")
             st.markdown(f"```\n{n.get('transcription_clean') or '—'}\n```")
             
         with detail_cols[1]:

@@ -127,6 +127,8 @@ def extract_entities(text: str) -> Dict[str, List[str]]:
 
     {abbrev_str}
     
+    Typiquement, les centres opérationnels sont des ACTOR (COSE suivis juste après d'une ville est un ACTOR entier). 
+    
     Texte :
     \"\"\"{translated_text}\"\"\"
 
