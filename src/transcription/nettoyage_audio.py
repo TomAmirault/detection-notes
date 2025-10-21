@@ -15,40 +15,50 @@ def nettoyer_transcription_audio(texte: str) -> str:
     - Ne change pas le sens ni l'ordre
     - Ne reformule pas
     """
-    prompt = f"""Tu es un assistant qui corrige légèrement un texte de transcription audio.
+    prompt = f"""Tu es un assistant chargé de corriger légèrement un texte issu d’une transcription audio.
 
-    RÈGLES :
-    1) Ne change pas le sens ni l’ordre des mots.
-    2) Corrige uniquement les fautes évidentes :
-    - Orthographe simple.
-    - Espaces manquants ou en trop.
-    - Ponctuation minimale (points, virgules, majuscules).
-    - Apostrophes et accents oubliés.
-    3) Ajoute des retours à la ligne pour rendre le texte lisible :
-    - Une idée ou une phrase = une ligne.
-    - Ne fusionne pas tout sur une seule ligne.
-    - N'utilise pas les ```
-    4) N’ajoute rien, ne reformule pas.
-    5) Si le texte est vide ou incompréhensible, renvoie une chaîne vide.
-    6) Abréviations officielles (ne pas développer ; corrige variantes proches vers la forme officielle) :
-    SNCF, ABC, RSD, TIR, PF, GEH, SMACC, COSE, TRX, VPL, MNV, N-1, COSE-P
-    7) Noms de villes françaises :
-    Corrige les noms de villes françaises mal transcrits vers leur forme correcte officielle.
-    Exemples :
-    "parie" → "Paris"
-    "lion" → "Lyon"
-    "gre noble" → "Grenoble"
-    "nant" → "Nantes"
-    "cean" → "Caen"
-    "cher bour" → "Cherbourg"
-    "vanne" → "Vannes"
-    8) Formats déterministes :
-    - Heures : “16 h” ou “16h” → “16h”
-    - Numéros de téléphone : supprimer les espaces
-    - Tensions : normaliser en kV
-    - cost → COSE
+RÈGLES DE CORRECTION :
 
-    Texte à corriger :
+1) Ne modifie **ni le sens**, **ni l’ordre des mots**.  
+2) Corrige uniquement les **erreurs évidentes** :
+   - Orthographe simple.  
+   - Espaces manquants ou en trop.  
+   - Ponctuation minimale (points, virgules, majuscules).  
+   - Apostrophes et accents oubliés.  
+
+3) Améliore la **lisibilité** :
+   - Une idée ou une phrase = une nouvelle ligne.  
+   - Ne colle pas tout sur une seule ligne.  
+   - N’utilise **jamais** les balises de code (```, ```python, etc.).  
+
+4) Ne reformule pas et **n’ajoute aucun mot**.  
+5) Si le texte est vide ou incompréhensible, renvoie **une chaîne vide**.  
+6) Si le texte est dans une autre langue, **traduis-le en français simple** sans changer le sens.  
+
+7) **Abréviations officielles** :  
+   - Ne pas développer les abréviations.  
+   - Corrige les variantes proches vers la forme officielle.  
+   - Liste des abréviations à respecter :  
+     SNCF, ABC, RSD, TIR, PF, GEH, SMACC, COSE, TRX, VPL, MNV, N-1, COSE-P.  
+
+8) **Noms de villes françaises** :  
+   - Corrige les noms de villes mal transcrits vers leur forme correcte officielle.  
+   Exemples :  
+     "parie" → "Paris"  
+     "lion" → "Lyon"  
+     "gre noble" → "Grenoble"  
+     "nant" → "Nantes"  
+     "cean" → "Caen"  
+     "cher bour" → "Cherbourg"  
+     "vanne" → "Vannes"  
+
+9) **Formats déterministes** :
+   - Heures : “16 h” ou “16h” → “16h”.  
+   - Numéros de téléphone : **supprime les espaces**.  
+   - Tensions : **normalise en kV**.  
+   - “cost” → **COSE**.  
+
+Texte à corriger :
     <<<
     {texte}
     >>>

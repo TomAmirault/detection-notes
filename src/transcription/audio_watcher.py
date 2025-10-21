@@ -22,10 +22,10 @@ import warnings
 warnings.filterwarnings("ignore")
 
 # Si un segment de parole détecté dure moins de 3 secondes, il sera ignoré.
-min_duration_on_choice = 7
+min_duration_on_choice = 3
 
 # Si une pause est plus courte que 10 secondes, elle peut être remplie ou fusionnée avec les segments voisins.
-min_duration_off_choice = 10
+min_duration_off_choice = 5
 prompt = "Abréviations officielles (ne pas développer ; corrige variantes proches vers la forme officielle): SNCF, ABC, RSD, TIR, PF, GEH, SMACC, COSE, TRX, VPL, MNV, N-1, COSE-P"
 
 if __name__ == "__main__":
@@ -139,8 +139,23 @@ if __name__ == "__main__":
     )
     
     
-    for audio_path in files_sorted: 
-        transcribe_whisper_clean(audio_path) 
+    # Transcription avec timeout
+    for audio_path in files_sorted:
+        try:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(transcribe_whisper_clean, audio_path)
+                try:
+                    res = future.result(timeout=record_duration*3)  # Timeout de 30 secondes
+                except concurrent.futures.TimeoutError:
+                    print(f"Timeout: la transcription de {audio_path} a dépassé {record_duration*3} secondes. Relance...")
+                    continue  # On passe à la prochaine itération pour réessayer
+            if not res:
+                continue
+            raw, clean = res
+            add_audio2db(str(audio_path), raw, clean)
+        except Exception as e:
+            print(f"Erreur transcription/insertion audio pour {audio_path}: {e}")
+
     print("Fin.")
 
 
