@@ -91,10 +91,70 @@ def safe_image(path: Optional[str]) -> Optional[str]:
         return path
     return None
 
+# --- Fonctions utilitaires ---
+
+CONFIG_PATH = "src/transcription/config.json"
+def load_config():
+    """Charge le fichier config.json, ou le crée s'il n'existe pas."""
+    if not os.path.exists(CONFIG_PATH):
+        with open(CONFIG_PATH, "w") as f:
+            json.dump({"pause": True}, f)
+    with open(CONFIG_PATH, "r") as f:
+        return json.load(f)
+
+def save_config(cfg):
+    """Sauvegarde la configuration dans config.json."""
+    with open(CONFIG_PATH, "w") as f:
+        json.dump(cfg, f, indent=4)
+
+def toggle_pause():
+    """Inverse la valeur de pause dans config.json."""
+    cfg = load_config()
+    cfg["pause"] = not cfg["pause"]
+    save_config(cfg)
+
+
+def evaluation_fiabilite(score: float) -> str:
+    """
+    Retourne un niveau de fiabilité textuel selon un score de confiance Whisper.
+
+    Paramètres :
+        score (float) : score de confiance compris entre 0 et 1.
+
+    Retourne :
+        str : Niveau de fiabilité parmi :
+              - 'Très fiable'   : score >= 0.90
+              - 'Fiable'        : 0.75 <= score < 0.90
+              - 'Moyennement fiable' : 0.60 <= score < 0.75
+              - 'Peu fiable'    : 0.40 <= score < 0.60
+              - 'Pas fiable'    : score < 0.40
+    """
+
+    if score >= 0.90:
+        return "Très fiable"
+    elif score >= 0.75:
+        return "Fiable"
+    elif score >= 0.60:
+        return "Moyennement fiable"
+    elif score >= 0.40:
+        return "Peu fiable"
+    else:
+        return "Pas fiable"
+
+
 
 # --- UI ---
 st.set_page_config(page_title=PAGE_TITLE, layout="wide")
 st.title(PAGE_TITLE)
+
+cfg = load_config()
+etat = "▶️ En lecture (True)" if cfg["pause"] else "⏸️ En pause (False)"
+st.write(f"**État actuel :** {etat}")
+
+
+if st.button("Pause / Lecture", on_click=toggle_pause):
+    st.rerun()
+
 
 # Sidebar filtres
 with st.sidebar:
@@ -290,25 +350,36 @@ for n in notes:
         # Colonnes dans l'expander
         detail_cols = st.columns([2,2])
         
-        with detail_cols[0]:
-            st.markdown("**Transcription complète**")
-            st.markdown(f"```\n{n.get('transcription_clean') or '—'}\n```")
+        # Image ou audio
+        img_path = safe_image(n.get("img_path_proc"))
+    
+        trans = n.get("transcription_clean")
+        
+        tmp_dir = os.path.join(os.path.join(os.path.dirname(__file__), "../../src/transcription/tmp"))
+        audio_json_path = os.path.join(tmp_dir, "transcriptions_log.json")
+        
+        audio_path = None
+        audio_score = None
+        if os.path.exists(audio_json_path):
+            with open(audio_json_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            for d in data:
+                if trans == d.get("transcription_clean"):
+                    audio_path = tmp_dir + "/" + d.get("filename")
+                    audio_score = d.get("score")
 
+        
+        with detail_cols[0]:
+
+            if img_path:
+                st.markdown(f"**Transcription complète")
+            
+            elif audio_path and os.path.exists(audio_path):
+                st.markdown(f"**Transcription complète :**  **{evaluation_fiabilite(audio_score)}** (Score = {audio_score})")
+
+            st.markdown(f"```\n{n.get('transcription_clean') or '—'}\n```")
+            
         with detail_cols[1]:
-            # Image ou audio
-            img_path = safe_image(n.get("img_path_proc"))
-            trans = n.get("transcription_clean")
-            
-            tmp_dir = os.path.join(os.path.join(os.path.dirname(__file__), "../../src/transcription/tmp"))
-            audio_json_path = os.path.join(tmp_dir, "transcriptions_log.json")
-            
-            audio_path = None
-            if os.path.exists(audio_json_path):
-                with open(audio_json_path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                for d in data:
-                    if trans == d.get("transcription_clean"):
-                        audio_path = tmp_dir + "/" + d.get("filename")
 
             if img_path:
                 img = Image.open(img_path)
