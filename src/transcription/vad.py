@@ -10,6 +10,8 @@ import noisereduce as nr
 import torch
 import json
 from datetime import datetime, timedelta
+import re
+
 
 # Ajoute la racine du projet au sys.path pour permettre les imports internes
 import sys
@@ -37,6 +39,8 @@ def VADe(audio_path, min_duration_on=3.0, min_duration_off=2.0):
     vad = pipeline(audio_path)
 
     log_path = os.path.join("src/transcription/tmp", "transcriptions_log.json")
+    logs_folder = os.path.dirname(log_path)
+    os.makedirs(logs_folder, exist_ok=True)
 
     # Charger le JSON existant s'il existe
     if os.path.exists(log_path):
@@ -125,17 +129,28 @@ def VADe(audio_path, min_duration_on=3.0, min_duration_off=2.0):
         data = json.load(f)
     
     data = [entry for entry in data if entry.get("filename") != filename_brut]
-    for entry in data : 
-        print(entry.get("filename"))
-        print(filename_brut)
+
         
     with open("src/transcription/tests/audio_brut.json", "w") as f:
         json.dump(data, f, indent=4)
     
     os.remove(audio_path)
     
+    
 if __name__ == "__main__":
+    
     folder = Path("src/transcription/tests")
-    for audio_path in folder.glob("*.wav"): 
+    # Lister tous les fichiers .wav
+    files = list(folder.glob("*.wav"))
+
+    # Trier selon le numéro de chunk extrait du nom du fichier
+    files_sorted = sorted(
+        files,
+        key=lambda f: int(re.search(r"chunk_(\d+)_", f.name).group(1))
+    )
+    print
+    for audio_path in files_sorted: 
         print(audio_path)
+        
         VADe(audio_path, min_duration_on=1, min_duration_off=2)    
+

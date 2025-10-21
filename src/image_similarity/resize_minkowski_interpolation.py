@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
 
-def resize_maxpool(img, new_shape, p=2):
+def minkowski_resize(img, new_shape, p=2):
     """
     img: image 2D (grayscale)
     new_shape: (new_height, new_width)
@@ -26,11 +26,12 @@ def resize_maxpool(img, new_shape, p=2):
 
 # img = cv2.imread("/Users/noahparisse/Documents/Paris-digital-lab/P1 RTE/detection-notes/src/recog/test_set/IMG_1702.jpeg")
 # gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-# resized = resize_maxpool(gray, (80,80),  2)
+# resized = minkowski_resize(gray, (80,80),  2)
 # print(np.min(resized))
 # print(np.max(resized))
 
-block = np.array([[10, 100, 200]], dtype=np.float32)
-for p in [1, 2, 4, 10]:
-    val = (np.mean(block ** p)) ** (1/p)
-    print(f"p={p}, Minkowski={val}")
+if __name__ == "__main__":
+    block = np.array([[10, 100, 200]], dtype=np.float32)
+    for p in [1, 2, 4, 10]:
+        val = (np.mean(block ** p)) ** (1/p)
+        print(f"p={p}, Minkowski={val}")

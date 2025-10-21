@@ -127,3 +127,6 @@ src/ner/db.csv
 src/ner/db.conll
 test_MLB/
 voice_assistant/
+
+src/compute_diff_tests.ipynb
+src/test_full_pipeline.ipynb

@@ -39,4 +39,6 @@ dependencies = [
     "spacy>=3.8.7",
     "scikit-learn>=1.7.2",
     "spacy>=3.8.7",
+    "pip>=25.2",
+    "torchcodec>=0.7.0",
 ]

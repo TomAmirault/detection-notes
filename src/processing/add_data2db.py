@@ -9,18 +9,30 @@ REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if REPO_PATH not in sys.path:
     sys.path.insert(0, REPO_PATH)
 
-from processing.mistral_ocr_llm import image_transcription
-from backend.db import (
+from src.processing.mistral_ocr_llm import image_transcription
+from src.backend.db import (
     DB_PATH,
     insert_note_meta,
     get_last_text_for_notes,
-    find_similar_note 
+    find_similar_note ,
+    find_similar_image
 )
-from processing.mistral_ocr_llm import image_transcription
-from ner.llm_extraction import extract_entities
-from utils.text_utils import has_meaningful_line, has_meaningful_text, compute_diff, is_htr_buggy, clean_added_text_for_ner
-from utils.image_utils import encode_image
+from src.processing.mistral_ocr_llm import image_transcription
+from src.ner.llm_extraction import extract_entities
+from src.utils.text_utils import (
+    has_meaningful_line,
+    has_meaningful_text,
+    compute_diff,
+    is_htr_buggy,
+    clean_added_text_for_ner,
+    score_and_categorize_texts,
+    reflow_sentences,
+)
+from src.utils.image_utils import encode_image
+from src.image_similarity.orb_and_align import isSimilar
 
+AUD_COUNTER = 0
+TEXT_COUNTER = 0
 
 def add_data2db(image_path: str, db_path: str = DB_PATH):
     """
@@ -34,6 +46,12 @@ def add_data2db(image_path: str, db_path: str = DB_PATH):
        Sinon :
          - crée un nouveau note_id et insère tout le texte (comme ajout initial)
     """
+
+    # Précheck : comparaison visuelle des images
+    if find_similar_image(image_path, db_path) is not None:
+        print("L'image captée a déjà été enregistrée en BBD.")
+        return None
+
     # 0) Encodage de l'image en base64 (pour Mistral OCR)
     encoded_image = encode_image(image_path)
 
@@ -60,6 +78,22 @@ def add_data2db(image_path: str, db_path: str = DB_PATH):
 
     similar_note_id = find_similar_note(
         cleaned_text, db_path=db_path, threshold=0.7)
+
+    # --- New: quick dedup check across recent texts using score
+    try:
+        last_texts = get_last_text_for_notes(db_path)
+    except Exception:
+        last_texts = {}
+
+    for nid, prev_text in (last_texts or {}).items():
+        # compare canonical reflowed versions for robustness
+        s_prev = reflow_sentences(prev_text or "", width=80)
+        s_new = reflow_sentences(cleaned_text or "", width=80)
+        score_info = score_and_categorize_texts(s_prev, s_new)
+        if score_info.get("score", 0.0) > 0.95:
+            print(f"[SKIP] Similar existing note {nid} (score={score_info['score']}) — insertion skipped for {image_path}")
+            return None
+
 
     diff_human = ""
     diff_json = []
@@ -92,7 +126,9 @@ def add_data2db(image_path: str, db_path: str = DB_PATH):
 
     else:
         # nouvelle feuille
-        note_id = str(uuid.uuid4())
+        global TEXT_COUNTER
+        TEXT_COUNTER += 1
+        note_id = f"TEXT-{TEXT_COUNTER}"
         lines = [l for l in cleaned_text.splitlines() if l.strip()]
         diff_human = "\n".join(
             f"+ Ligne {i+1}. {l}" for i, l in enumerate(lines))
@@ -160,6 +196,17 @@ def add_audio2db(audio_path: str, transcription_brute: str, transcription_clean:
         return None
     transcription_clean = strip_surrounding_quotes_local(transcription_clean)
     
+    # Pare-feu HTR / anti-bruit pour audio
+    buggy, reason = is_htr_buggy(transcription_brute or "", transcription_clean or "")
+    if buggy:
+        print(f"[SKIP][HTR-BUG] audio {audio_path}: {reason}")
+        return None
+
+    if not has_meaningful_text(transcription_clean):
+        print(f"[SKIP] audio {audio_path} : transcription non-significative (anti-bruit)")
+        return None
+
+
     # Prepare diff/texte_ajoute for audio: each audio is a single added line
     diff_human = f"+ Ligne 1. {transcription_clean.strip()}"
     diff_json = [{"type": "insert", "line": 1, "content": transcription_clean.strip()}]
@@ -168,7 +215,9 @@ def add_audio2db(audio_path: str, transcription_brute: str, transcription_clean:
     cleaned_for_ner = clean_added_text_for_ner(diff_human)
     entities = extract_entities(cleaned_for_ner) if cleaned_for_ner else {}
 
-    note_id = str(uuid.uuid4())
+    global AUD_COUNTER
+    AUD_COUNTER += 1
+    note_id = f"AUD-{AUD_COUNTER}"
 
     raw = {
         "source": "audio-wav2vec2",

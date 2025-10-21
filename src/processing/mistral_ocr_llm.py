@@ -11,22 +11,33 @@ client = Mistral(api_key=api_key)
 # --- Pré-process : collapse des lignes de continuation ---
 def pre_collapse_continuations(text: str) -> str:
     """
-    Détecte les lignes de continuation (↳, >, indentation, puces)
-    et les concatène à la ligne précédente.
+    Normalize line starts but do NOT collapse any lines together.
+
+    - Strip surrounding whitespace.
+    - Remove common bullet markers and checkbox markers at start of line.
+    - Remove explicit continuation markers (↳, >) at start of line.
+    - Keep every (non-empty) input line as its own output line.
     """
-    lines = []
+    out_lines = []
     for line in text.splitlines():
-        stripped = line.strip()
-        if not stripped:
+        if not line.strip():
             continue
-        if stripped.startswith(("↳", ">", "-", "*", "•")):
-            if lines:
-                lines[-1] += " " + stripped.lstrip("↳> -*•").strip()
-            else:
-                lines.append(stripped)
-        else:
-            lines.append(stripped)
-    return "\n".join(lines)
+        s = line.strip()
+
+        # Remove checkbox markers like "[ ]" or "[x]"
+        s = re.sub(r'^\[\s*[xX]?\s*\]\s*', '', s)
+
+        # If line starts with common bullet markers, strip them but keep the line
+        if s.startswith(('•', '-', '*', '\u2022')):
+            s = re.sub(r'^[\u2022\-\*\u2023\u25E6\u2043\u2219\u25AA\u25CF\s]+', '', s).strip()
+
+        # Remove explicit continuation markers at line start (↳, >) but do NOT merge lines
+        s = re.sub(r'^[\u21b3>]+\s*', '', s)
+
+        if s:
+            out_lines.append(s)
+
+    return "\n".join(out_lines)
 
 
 # --- Post-process : normalisations déterministes ---
@@ -46,10 +57,11 @@ def postprocess_normalized(text: str) -> str:
             continue
 
         # a) supprimer les explications style "(Aucune information exploitable ...)"
-        if re.fullmatch(r"[\*\(_\s]*[A-Za-zÀ-ÿ].*\)[\*\)_\s]*", line):
-            if "information exploitable" in line.lower() or "retour vide" in line.lower():
+            # Bullets - keep as separate lines; strip common bullet markers
+            if stripped.startswith(('•', '-', '*', '\u2022')):
+                stripped = re.sub(r'^[\u2022\-\*\u2023\u25E6\u2023\u2043\u2219\u25AA\u25CF\s]+', '', stripped).strip()
+                lines.append(stripped)
                 continue
-
         # b) ignorer les lignes vides sémantiquement
         if not re.search(r"[A-Za-zÀ-ÿ0-9]", line):
             continue
@@ -60,7 +72,30 @@ def postprocess_normalized(text: str) -> str:
         line = re.sub(r"\b0\d(?:\s?\d{2}){4}\b",
                       lambda m: m.group(0).replace(" ", ""), line)    # 07 66 .. -> 0766..
 
-        lines.append(line)
+        # Si la ligne contient ':' on peut vouloir mettre la suite sur la ligne suivante.
+        # Exemples: "Entrée : texte" -> ["Entrée:", "texte"]
+        # Mais on évite de splitter les motifs de type heure (16:30) ou les URLs (http://...),
+        # ou autres schémas 'scheme:'.
+        if ':' in line:
+            # heuristiques pour ne PAS splitter
+            if re.search(r"\b\d{1,2}:\d{2}\b", line):
+                # contient une heure type 16:30 -> ne pas splitter
+                lines.append(line)
+            elif re.search(r"https?://|\w+://", line.lower()):
+                # url ou schéma -> ne pas splitter
+                lines.append(line)
+            else:
+                head, tail = line.split(':', 1)
+                head = head.strip()
+                tail = tail.strip()
+                if head and tail:
+                    # garder le ':' à la fin de la première ligne
+                    lines.append(head + ':')
+                    lines.append(tail)
+                else:
+                    lines.append(line)
+        else:
+            lines.append(line)
 
     # 3) Supprimer les lignes “admin” et bruit numérique court
     final = []

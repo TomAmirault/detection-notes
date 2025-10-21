@@ -9,9 +9,8 @@ import json
 # python3 src/transcription/enregistrement.py
 # python3 -m sounddevice   /  Pour voir les entrées audio
  
-device_index = 0
 
-def record_loop(duration, stop_event, device,  bruit_reduction=True, samplerate=16000):
+def record_loop(duration, stop_event, device=0,  bruit_reduction=True, samplerate=16000):
     """
     Enregistre des segments audio consécutifs et les sauvegarde dans un dossier temporaire.
     L'enregistrement s'arrête manuellement avec Ctrl+C ou automatiquement après `duration` secondes.
@@ -35,12 +34,25 @@ def record_loop(duration, stop_event, device,  bruit_reduction=True, samplerate=
 
     print("Enregistrement de la parole.")
 
+    log= []
+
     try:
         with sd.InputStream(samplerate=samplerate, channels=1, dtype='float32') as stream:
             while not stop_event.is_set():
                 
                 
-                
+                audio_folder = "src/transcription/tests"
+                # Récupérer la liste des fichiers .wav existants dans le dossier
+                existing_files = {f for f in os.listdir(audio_folder) if f.endswith(".wav")}
+
+                # Filtrer les entrées : on garde uniquement celles dont le filename existe vraiment
+                log = [entry for entry in log if entry["filename"] in existing_files]
+
+                # Sauvegarder le JSON nettoyé
+                with open(log_path, "w", encoding="utf-8") as f:
+                    json.dump(log, f, indent=4, ensure_ascii=False)
+                       
+                       
                 start_time = datetime.now()
                 safe_time = start_time.strftime("%Y%m%d_%H%M%S")
                 filename = f"record_chunk_{k}_{safe_time}.wav"
@@ -58,16 +70,29 @@ def record_loop(duration, stop_event, device,  bruit_reduction=True, samplerate=
                 sf.write(filepath, recording, samplerate)
                 end_time = datetime.now()
             
+            
+                # Charger le JSON existant
+                if os.path.exists(log_path):
+                    with open(log_path, "r", encoding="utf-8") as f:
+                        log = json.load(f)
+                else:
+                    log = []
+                    
+                    
+         
+                    
+                    
                 entry = {
                     "start_time": start_time.strftime("%Y-%m-%d %H:%M:%S"),
                     "end_time": end_time.strftime("%Y-%m-%d %H:%M:%S"),
                     "filename": filename
                 }
                 
-
-                # Sauvegarde du JSON après chaque segment
+                log.append(entry)
+                
+                                # Sauvegarde du JSON après chaque segment
                 with open(log_path, "w", encoding="utf-8") as f:
-                    json.dump([entry], f, indent=4, ensure_ascii=False)
+                    json.dump(log, f, indent=4, ensure_ascii=False)
 
 
                 
@@ -98,3 +123,26 @@ def record_loop(duration, stop_event, device,  bruit_reduction=True, samplerate=
             with open(log_path, "w", encoding="utf-8") as f:
                 json.dump([entry], f, indent=4, ensure_ascii=False)
                 
+                
+if __name__ == "__main__":
+    from pathlib import Path
+    folder_tests = Path("src/transcription/tests")
+    
+    for f in folder_tests.glob("*.wav"):
+        try:
+            f.unlink()
+        except Exception as e:
+            print(f"Could not remove {f}: {e}")
+            
+    import threading
+    
+    try:
+        stop_event = threading.Event()
+        enregistrement_thread = threading.Thread(target = record_loop, args=(5, stop_event, 0))
+        enregistrement_thread.start()
+    except KeyboardInterrupt:
+        print("Arrêt demandé par l'utilisateur")
+        stop_event.set()
+        print("Attente de la fin de record_loop")
+        enregistrement_thread.join()
+        print("Fin.")

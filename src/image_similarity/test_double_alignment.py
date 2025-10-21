@@ -1,9 +1,12 @@
+''' Pas vraiment concluant, et ça rajoutait juste de l'incertitude,
+du risque de se retrouver avec une image complètement déformée'''
+
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 import os
 import time
-from resize_maxpooling import resize_maxpool
+from image_similarity.resize_minkowski_interpolation import minkowski_resize
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -105,8 +108,8 @@ def double_alignment(sourcea, sourceb):
     w = min(gray1.shape[1], gray2.shape[1])
     # gray1 = cv2.resize(gray1, shape_of_diff, interpolation=cv2.INTER_AREA)
     # gray2 = cv2.resize(gray2, shape_of_diff, interpolation=cv2.INTER_AREA)
-    gray1 = resize_maxpool(gray1, shape_of_diff, minkowski_mean_order)
-    gray2 = resize_maxpool(gray2, shape_of_diff, minkowski_mean_order)
+    gray1 = minkowski_resize(gray1, shape_of_diff, minkowski_mean_order)
+    gray2 = minkowski_resize(gray2, shape_of_diff, minkowski_mean_order)
     if print_graphs:
         print("Affichage des grays redimensionnés")
         show2_with_cursor(gray1, gray2)

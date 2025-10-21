@@ -21,7 +21,7 @@ OUT_DIR = os.path.join(BASE_DIR, "../../../tmp/paper")
 os.makedirs(OUT_DIR, exist_ok=True)
 
 # Cooldown
-COOLDOWN_SEC = 20.0   # délai mini entre deux sauvegardes (évite les doublons)
+COOLDOWN_SEC = 5.0   # délai mini entre deux sauvegardes (évite les doublons)
 
 last_save_time = 0.0
 

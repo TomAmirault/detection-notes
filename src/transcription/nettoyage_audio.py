@@ -15,60 +15,56 @@ def nettoyer_transcription_audio(texte: str) -> str:
     - Ne change pas le sens ni l'ordre
     - Ne reformule pas
     """
-    prompt = f"""Tu es un assistant de normalisation de texte issu d’une transcription audio de chez RTE (Réseau Transport Electricité).
+    prompt = f"""Tu es un assistant chargé de corriger légèrement un texte issu d’une transcription audio.
 
-    Objectif :
-    Nettoyer la transcription tout en conservant fidèlement le contenu et l’ordre des mots.
+RÈGLES DE CORRECTION :
 
-    RÈGLES STRICTES :
-    1) Ne change pas l’ordre du texte ni les phrases.
-    2) Corrige uniquement les erreurs évidentes :
-       - Fautes d’orthographe simples.
-       - Espaces en trop ou manquants.
-       - Mots collés ou séparés à tort.
-       - Ponctuation minimale (virgules, points, majuscules au début de phrase).
-       - Apostrophes ou accents oubliés.
-    3) Ne reformule pas. Ne paraphrase pas.
-    4) N’ajoute rien, ne commente pas, ne mets pas de balises ou de markdown.
-    5) Si le texte ne contient aucune information exploitable, renvoie une chaîne vide.
-    6) Abréviations officielles (ne pas développer ; corrige variantes proches vers la forme officielle) :
-     SNCF, ABC, RSD, TIR, PF, GEH, SMACC, COSE, TRX, VPL, MNV, N-1, COSE-P
+1) Ne modifie **ni le sens**, **ni l’ordre des mots**.  
+2) Corrige uniquement les **erreurs évidentes** :
+   - Orthographe simple.  
+   - Espaces manquants ou en trop.  
+   - Ponctuation minimale (points, virgules, majuscules).  
+   - Apostrophes et accents oubliés.  
 
-    7) Noms de villes françaises :
-    Corrige les noms de villes françaises mal transcrits vers leur forme correcte officielle.
-    Exemple : 
-    "parie" → "Paris", 
-    "lion" → "Lyon", 
-    "gre noble" → "Grenoble",
-    "nant" → "Nantes",
-    "cean" → "Caen",
-    "cher bour" → "Cherbourg",
-    "vanne" → "Vannes"
-   
-    8) Formats déterministes :
-    - Heures : “16 h” ou “16h” → “16h”
-    - Numéros de téléphone : supprimer espaces
-    - Tensions : normaliser en kV
-    - cost → COSE
+3) Améliore la **lisibilité** :
+   - Une idée ou une phrase = une nouvelle ligne.  
+   - Ne colle pas tout sur une seule ligne.  
+   - N’utilise **jamais** les balises de code (```, ```python, etc.).  
 
-    Exemple :
-    Entrée :
-    "prévenir euuh monsieur martin ancien zéro sept six six trente sept zéro deux quatre sept nouveau zéro sept soixante six trente sept huit deux quatre sept appel privé avec joan maintenace vérifier planning travau confirmation travaux demain huit heure t quatre t deux t trois envoyer c r à c m à seize heure
-"
+4) Ne reformule pas et **n’ajoute aucun mot**.  
+5) Si le texte est vide ou incompréhensible, renvoie **une chaîne vide**.  
+6) Si le texte est dans une autre langue, **traduis-le en français simple** sans changer le sens.  
 
-    Sortie :
-    "Prévenir M. Martin ancien: 0766370247
-    Nouveau: 0766378247
-    Appel privé avec Jean Maintenance vérifier planning travaux
-    Confirmation travaux demain 8h
-    T4 T2 T3
-    Envoyer CR à CM à 16h"
+7) **Abréviations officielles** :  
+   - Ne pas développer les abréviations.  
+   - Corrige les variantes proches vers la forme officielle.  
+   - Liste des abréviations à respecter :  
+     SNCF, ABC, RSD, TIR, PF, GEH, SMACC, COSE, TRX, VPL, MNV, N-1, COSE-P.  
 
-    Texte à nettoyer :
+8) **Noms de villes françaises** :  
+   - Corrige les noms de villes mal transcrits vers leur forme correcte officielle.  
+   Exemples :  
+     "parie" → "Paris"  
+     "lion" → "Lyon"  
+     "gre noble" → "Grenoble"  
+     "nant" → "Nantes"  
+     "cean" → "Caen"  
+     "cher bour" → "Cherbourg"  
+     "vanne" → "Vannes"  
+
+9) **Formats déterministes** :
+   - Heures : “16 h” ou “16h” → “16h”.  
+   - Numéros de téléphone : **supprime les espaces**.  
+   - Tensions : **normalise en kV**.  
+   - “cost” → **COSE**.  
+
+Texte à corriger :
     <<<
     {texte}
     >>>
     """
+
+
 
     response = client.chat.complete(
         model="mistral-large-latest",
