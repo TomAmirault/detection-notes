@@ -19,7 +19,7 @@ from nettoyage_audio import nettoyer_transcription_audio
 
 model = whisper.load_model("large-v3-turbo")
 
-def transcribe_whisper_clean(audio_path, prompt="Abréviations officielles (ne pas développer ; corrige variantes proches vers la forme officielle): SNCF, ABC, RSD, TIR, PF, GEH, SMACC, COSE, TRX, VPL, MNV, N-1, COSE-P"):
+def transcribe_whisper_clean(audio_path, prompt="Abréviations officielles (ne pas développer ; corrige variantes proches vers la forme officielle): SNCF, ABC, RSD, TIR, PF, GEH, SMACC, COSE, TRX, VPL, MNV, N-1, COSE-P", pause=True):
     """
     Transcrit un fichier audio en texte à l’aide d’un modèle Whisper.
 
@@ -51,28 +51,44 @@ def transcribe_whisper_clean(audio_path, prompt="Abréviations officielles (ne p
     if entry and entry.get("transcription"):
         return
     
-    # whisper expects a string path or an ndarray; ensure we pass a string
-    result = model.transcribe(str(audio_path), prompt=prompt)
-    
-    predicted_sentence = result["text"]
+    if pause :
+        # whisper expects a string path or an ndarray; ensure we pass a string
+        result = model.transcribe(str(audio_path), prompt=prompt)
+        
+        predicted_sentence = result["text"]
 
-    entry["transcription"] = predicted_sentence
-    cleaned = nettoyer_transcription_audio(predicted_sentence)
-    entry["transcription_clean"] = cleaned
-    
-    list_conf = []
-    for seg in result["segments"]:
-        conf = np.exp(seg["avg_logprob"])  
-        list_conf.append(conf)
-    avg_conf = sum(list_conf) / len(list_conf)
-    avg_conf = round(avg_conf, 2)
-    
-    entry["score"] = avg_conf
+        entry["transcription"] = predicted_sentence
+        cleaned = nettoyer_transcription_audio(predicted_sentence)
+        entry["transcription_clean"] = cleaned
+        
+        list_conf = []
+        for seg in result["segments"]:
+            conf = np.exp(seg["avg_logprob"])  
+            list_conf.append(conf)
+        avg_conf = sum(list_conf) / len(list_conf)
+        avg_conf = round(avg_conf, 2)
+        
+        entry["score"] = avg_conf
 
 
-    os.makedirs(os.path.dirname(log_path), exist_ok=True)
-    with open(log_path, "w", encoding="utf-8") as f:
-        json.dump(logs, f, ensure_ascii=False, indent=4)
+        os.makedirs(os.path.dirname(log_path), exist_ok=True)
+        with open(log_path, "w", encoding="utf-8") as f:
+            json.dump(logs, f, ensure_ascii=False, indent=4)
+        
+    else :
+        
+        with open(log_path, "r") as f:
+            data = json.load(f)
+        
+        data = [entry for entry in data if entry.get("filename") != filename_brut]
+
+            
+        with open(log_path, "w") as f:
+            json.dump(data, f, indent=4)
+        
+        os.remove(audio_path)
+            
+        return
 
     # Return raw and cleaned transcriptions so callers can insert them in DB
     return predicted_sentence, cleaned

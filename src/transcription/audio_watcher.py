@@ -27,9 +27,12 @@ min_duration_on_choice = 3
 min_duration_off_choice = 10
 prompt = "Abréviations officielles (ne pas développer ; corrige variantes proches vers la forme officielle): SNCF, ABC, RSD, TIR, PF, GEH, SMACC, COSE, TRX, VPL, MNV, N-1, COSE-P"
 
+PAUSE = True
+
 if __name__ == "__main__":
     try:
-        record_duration = 30
+
+        record_duration = 10
         stop_event = threading.Event()
         device_index = 0
         enregistrement_thread = threading.Thread(target = record_loop, args=(record_duration, stop_event, device_index))
@@ -40,7 +43,13 @@ if __name__ == "__main__":
         
 
         
-
+        with open("src/transcription/config.json", "r") as f:
+            cfg = json.load(f)
+        cfg["pause"] = True  
+        with open("src/transcription/config.json", "w") as f:
+            json.dump(cfg, f)
+            
+            
         # Cleanup leftover recording chunks from previous runs
         for folder in (folder_tmp, folder_tests):
             for f in folder.glob("record_chunk*.wav"):
@@ -92,12 +101,16 @@ if __name__ == "__main__":
                 )
             )
             
+            with open("src/transcription/config.json", "r") as f:
+                cfg = json.load(f)
+            PAUSE = cfg.get("pause", True)
+            
             
             # Transcription avec timeout
             for audio_path in files_sorted:
                 try:
                     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                        future = executor.submit(transcribe_whisper_clean, audio_path)
+                        future = executor.submit(transcribe_whisper_clean, audio_path, pause=PAUSE)
                         try:
                             res = future.result(timeout=record_duration*3)  # Timeout de 30 secondes
                         except concurrent.futures.TimeoutError:
@@ -142,7 +155,7 @@ if __name__ == "__main__":
     for audio_path in files_sorted:
         try:
             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(transcribe_whisper_clean, audio_path)
+                future = executor.submit(transcribe_whisper_clean, audio_path, pause=PAUSE)
                 try:
                     res = future.result(timeout=record_duration*3)  # Timeout de 30 secondes
                 except concurrent.futures.TimeoutError:
