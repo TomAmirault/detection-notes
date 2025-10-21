@@ -1,6 +1,5 @@
 from vad import VADe
 from enregistrement import record_loop
-from transcribe import transcribe_w2v2_clean
 from transcribe_whisper import transcribe_whisper_clean
 import threading
 import json
@@ -25,7 +24,7 @@ warnings.filterwarnings("ignore")
 min_duration_on_choice = 3
 
 # Si une pause est plus courte que 10 secondes, elle peut être remplie ou fusionnée avec les segments voisins.
-min_duration_off_choice = 5
+min_duration_off_choice = 10
 prompt = "Abréviations officielles (ne pas développer ; corrige variantes proches vers la forme officielle): SNCF, ABC, RSD, TIR, PF, GEH, SMACC, COSE, TRX, VPL, MNV, N-1, COSE-P"
 
 if __name__ == "__main__":
