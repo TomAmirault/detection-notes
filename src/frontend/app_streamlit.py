@@ -219,103 +219,107 @@ st.markdown(
 )
 
 # Affichage en cartes
-for n in notes:
-    st.markdown("---")
-    header_cols = st.columns([1, 4, 2])
+for n in notes:  
+    st.divider()
+    
+    # Colonnes principales : meta, résumé et entités
+    cols = st.columns([1, 3, 2])
 
     # Colonne gauche : méta
-    with header_cols[0]:
-        st.markdown(f"**ID**: {n['id']}")
-        st.markdown(f"**TS**: {ts_human(n['ts'])}")
+    with cols[0]:
+        st.markdown(f"**ID:** {n['id']}")
+        st.markdown(f"**TS:** {ts_human(n['ts'])}")
         if n.get("note_id"):
             st.caption(f"note_id: {n['note_id']}")
         if n.get("evenement_id"):
             st.caption(f"événement: {n['evenement_id'][:8]}...")
 
-    # Colonne centre : textes
-    with header_cols[1]:
-        st.markdown("**Transcription nettoyée**")
-        st.markdown(f"```\n{n.get('transcription_clean') or '—'}\n```")
-
+    # Colonne centre : Informations ajoutées
+    with cols[1]:
         st.markdown("**Informations ajoutées**")
         st.markdown(f"```\n{n.get('texte_ajoute') or '—'}\n```")
-
-    # Colonne droite : image ou lecteur audio si présent dans raw_json
-    with header_cols[2]:
-        img_path = safe_image(n.get("img_path_proc"))
-        trans = n.get("transcription_clean")
         
-        tmp_dir = os.path.join(os.path.join(os.path.dirname(__file__), "../../src/transcription/tmp"))
-        audio_json_path = os.path.join(tmp_dir, "transcriptions_log.json")
-        
-        if os.path.exists(audio_json_path):
-            with open(audio_json_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
+    # Colonne droite : entités
+    with cols[2]:
+        def parse_entities_field(field_name: str):
+            val = n.get(field_name)
+            if val:
+                try:
+                    return json.loads(val)
+                except:
+                    return []
+            return []
 
-        audio_path = None
-        for d in data:
-            trans_2 = d.get("transcription_clean")
-            if trans == trans_2 : 
-                audio_path = tmp_dir + "/" + d.get("filename")
+        entities_display = {
+            "GEO": parse_entities_field("entite_GEO"),
+            "ACTOR": parse_entities_field("entite_ACTOR"),
+            "DATETIME": parse_entities_field("entite_DATETIME"),
+            "EVENT": parse_entities_field("entite_EVENT"),
+            "INFRASTRUCTURE": parse_entities_field("entite_INFRASTRUCTURE"),
+            "OPERATING_CONTEXT": parse_entities_field("entite_OPERATING_CONTEXT"),
+            "PHONE_NUMBER": parse_entities_field("entite_PHONE_NUMBER"),
+            "ELECTRICAL_VALUE": parse_entities_field("entite_ELECTRICAL_VALUE"),
+        }
 
-        if img_path:
-            img = Image.open(img_path)
-            # Forcer la rotation si l'image est en paysage
-            if img.width > img.height:
-                img = img.rotate(-90, expand=True)
-            st.image(img, width='stretch', caption=os.path.basename(img_path))
-        elif audio_path and os.path.exists(audio_path):
-            st.audio(audio_path, format="audio/wav")
-            st.caption(os.path.basename(audio_path))
+        entity_colors = {
+            "GEO": "#F5A6A7",
+            "ACTOR": "#7FB3D5",
+            "DATETIME": "#88D8C0",
+            "EVENT": "#FFD699",
+            "INFRASTRUCTURE": "#FFF0A6",
+            "OPERATING_CONTEXT": "#C39BD3",
+            "PHONE_NUMBER": "#7F8C8D",
+            "ELECTRICAL_VALUE": "#F7A8D1",
+        }
+
+
+        all_entities_html = []
+        for label, values in entities_display.items():
+            for v in values:
+                v_display = v if len(v) <= 30 else v[:27] + "…"
+                all_entities_html.append(
+                    f'<span style="background-color:{entity_colors[label]}; color:#000; padding:3px 8px; border-radius:5px; margin:2px; display:inline-block;">{v_display}</span>'
+                )
+        if all_entities_html:
+            st.markdown(" ".join(all_entities_html), unsafe_allow_html=True)
         else:
-            st.caption("Pas d'image/audio disponible")
+            st.caption("Aucune entité")
 
-    # Affichage des entités
-    def parse_entities_field(field_name: str):
-        val = n.get(field_name)
-        if val:
-            try:
-                return json.loads(val)
-            except Exception:
-                return []
-        return []
+    # --- Menu déroulant pour détails complets ---
+    with st.expander("Voir plus de détails et fichiers"):
+        # Colonnes dans l'expander
+        detail_cols = st.columns([2,2])
+        
+        with detail_cols[0]:
+            st.markdown("**Transcription complète**")
+            st.markdown(f"```\n{n.get('transcription_clean') or '—'}\n```")
 
-    entities_display = {
-        "GEO": parse_entities_field("entite_GEO"),
-        "ACTOR": parse_entities_field("entite_ACTOR"),
-        "DATETIME": parse_entities_field("entite_DATETIME"),
-        "EVENT": parse_entities_field("entite_EVENT"),
-        "INFRASTRUCTURE": parse_entities_field("entite_INFRASTRUCTURE"),
-        "OPERATING_CONTEXT": parse_entities_field("entite_OPERATING_CONTEXT"),
-        "PHONE_NUMBER": parse_entities_field("entite_PHONE_NUMBER"),
-        "ELECTRICAL_VALUE": parse_entities_field("entite_ELECTRICAL_VALUE"),
-    }
+        with detail_cols[1]:
+            # Image ou audio
+            img_path = safe_image(n.get("img_path_proc"))
+            trans = n.get("transcription_clean")
+            
+            tmp_dir = os.path.join(os.path.join(os.path.dirname(__file__), "../../src/transcription/tmp"))
+            audio_json_path = os.path.join(tmp_dir, "transcriptions_log.json")
+            
+            audio_path = None
+            if os.path.exists(audio_json_path):
+                with open(audio_json_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                for d in data:
+                    if trans == d.get("transcription_clean"):
+                        audio_path = tmp_dir + "/" + d.get("filename")
 
-    # Couleurs par type d'entité
-    entity_colors = {
-        "GEO": "#E63946",            # rouge vif
-        "ACTOR": "#457B9D",          # bleu profond
-        "DATETIME": "#2A9D8F",       # vert sarcelle
-        "EVENT": "#F4A261",          # orange chaud
-        "INFRASTRUCTURE": "#E9C46A", # jaune doré
-        "OPERATING_CONTEXT": "#9D4EDD", # violet foncé
-        "PHONE_NUMBER": "#1D3557",   # bleu nuit
-        "ELECTRICAL_VALUE": "#F72585", # rose vif
-    }
-
-    # Rassembler toutes les entités dans une seule liste avec couleur
-    all_entities_html = []
-    for label, values in entities_display.items():
-        for v in values:
-            all_entities_html.append(
-                f'<span style="background-color:{entity_colors[label]}; color:#000; padding:3px 8px; border-radius:5px; margin:2px; display:inline-block;">{v}</span>'
-            )
-
-    if not all_entities_html:
-        st.caption("Aucune entité stockée pour cette note.")
-    else:
-        st.markdown(" ".join(all_entities_html), unsafe_allow_html=True)
-
+            if img_path:
+                img = Image.open(img_path)
+                if img.width > img.height:
+                    img = img.rotate(-90, expand=True)
+                st.image(img, width='stretch', caption=os.path.basename(img_path))
+            elif audio_path and os.path.exists(audio_path):
+                st.audio(audio_path, format="audio/wav")
+                st.caption(os.path.basename(audio_path))
+            else:
+                st.caption("Pas d'image/audio disponible")
 
     # ----- Actions -----
     st.markdown("**Actions**")

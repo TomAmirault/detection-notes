@@ -30,8 +30,8 @@ def main():
 
         # Lancer la caméra en arrière-plan avec logs dans le terminal principal et cwd forcé à la racine du projet
         project_root = os.path.abspath(os.path.join(BASE_DIR, ".."))
-        # processes.append(subprocess.Popen([sys.executable, video_capture_path], stdout=sys.stdout, stderr=sys.stderr, cwd=project_root))
-        processes.append(subprocess.Popen([sys.executable, yolo_path], stdout=sys.stdout, stderr=sys.stderr, cwd=project_root))
+        processes.append(subprocess.Popen([sys.executable, video_capture_path], stdout=sys.stdout, stderr=sys.stderr, cwd=project_root))
+        # processes.append(subprocess.Popen([sys.executable, yolo_path], stdout=sys.stdout, stderr=sys.stderr, cwd=project_root))
         print("2) Lancement du système de détection de feuilles de papier.")
 
         # Lancer l'audio en arrière-plan
