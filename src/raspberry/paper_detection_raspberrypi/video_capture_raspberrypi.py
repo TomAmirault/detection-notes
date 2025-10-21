@@ -7,6 +7,8 @@ FPS = 30
 DELAY = 1 / FPS  
 
 picam = Picamera2()
+config = picam.create_video_configuration(main={"size": (4608, 2592)})
+picam.configure(config)
 picam.start()
 
 while True:
@@ -14,6 +16,6 @@ while True:
     possible_papers = shape_detector(img)
     if possible_papers:
         save_detection(img, possible_papers)
-    time.sleep(DELAY)
+    # time.sleep(DELAY)
 
 picam.stop()  # sera exécuté si script est tué proprement

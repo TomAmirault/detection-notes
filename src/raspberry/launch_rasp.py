@@ -83,7 +83,7 @@ try:
             if f.endswith((".jpg", ".png", ".jpeg")):
                 sftp.get(os.path.join(REMOTE_OUTPUT_DIR, f), os.path.join(os.path.join(LOCAL_OUTPUT_DIR, f)))
                 sftp.remove(os.path.join(REMOTE_OUTPUT_DIR, f))
-                # add_data2db(os.path.join(LOCAL_OUTPUT_DIR, f))
+                add_data2db(os.path.join(LOCAL_OUTPUT_DIR, f))
                 print("Nouveau fichier chargé dans la BDD :",f)
 
         time.sleep(2)
