@@ -18,7 +18,7 @@ from src.ner.compare_entities import same_event
 from src.utils.text_utils import compute_diff
 from src.image_similarity.orb_and_align import isSimilar
 
-DB_PATH = os.environ.get("RTE_DB_PATH", "data/db/notes.sqlite")
+DB_PATH = os.environ.get("RTE_DB_PATH", os.path.join(REPO_PATH,"data/db/notes.sqlite"))
 
 def _resolve_db_path(db_path: Optional[str]) -> str:
     return db_path or DB_PATH
@@ -319,16 +319,18 @@ def clear_notes_meta(db_path: str = DB_PATH):
     """
     Supprime toutes les lignes de la table notes_meta et réinitialise l'AUTOINCREMENT.
     """
-    ensure_db(db_path)
-    con = sqlite3.connect(db_path)
-    cur = con.cursor()
-    cur.execute("DELETE FROM notes_meta;")
-    # Réinitialise l'AUTOINCREMENT
-    cur.execute("DELETE FROM sqlite_sequence WHERE name='notes_meta';")
-    con.commit()
-    con.close()
-    print(
-        f"La base de données a été vidée.")
+    if os.path.exists(db_path):
+        con = sqlite3.connect(db_path)
+        cur = con.cursor()
+        cur.execute("DELETE FROM notes_meta;")
+        # Réinitialise l'AUTOINCREMENT
+        cur.execute("DELETE FROM sqlite_sequence WHERE name='notes_meta';")
+        con.commit()
+        con.close()
+        print(
+            f"La base de données a été vidée.")
+    else:
+        print("Pas de base de données trouvée à l'adresse :", db_path)
 
 
 def delete_entry_by_id(entry_id: int, db_path: str = DB_PATH) -> int:

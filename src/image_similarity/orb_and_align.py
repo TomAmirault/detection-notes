@@ -159,6 +159,7 @@ def isSimilar(old_img_path:Path, new_img_path:Path) -> bool:
         return answer.item()
     except Exception as e:
         print("Exception lors de l'exécution de isSimilar:", e)
+        return False
 
 if __name__ == '__main__':
     tmp_dir = os.path.join(REPO_PATH, "tmp/")
