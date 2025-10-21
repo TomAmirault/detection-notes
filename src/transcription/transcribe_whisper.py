@@ -59,6 +59,16 @@ def transcribe_whisper_clean(audio_path, prompt="Abréviations officielles (ne p
     entry["transcription"] = predicted_sentence
     cleaned = nettoyer_transcription_audio(predicted_sentence)
     entry["transcription_clean"] = cleaned
+    
+    list_conf = []
+    for seg in result["segments"]:
+        conf = np.exp(seg["avg_logprob"])  
+        list_conf.append(conf)
+    avg_conf = sum(list_conf) / len(list_conf)
+    avg_conf = round(avg_conf, 2)
+    
+    entry["score"] = avg_conf
+
 
     os.makedirs(os.path.dirname(log_path), exist_ok=True)
     with open(log_path, "w", encoding="utf-8") as f:
