@@ -5,11 +5,12 @@ ENTITY_WEIGHTS = {
     "GEO": 0.30,
     "INFRASTRUCTURE": 0.15,
     "ACTOR": 0.15,
-    "PHONE_NUMBER": 0.15,
+    "PHONE_NUMBER": 0.10,
     "EVENT": 0.10,
+    "ABBREVIATION_UNKNOWN": 0.05,
     "DATETIME": 0.05,
     "OPERATING_CONTEXT": 0.05,
-    "ELECTRICAL_VALUE": 0.05
+    "ELECTRICAL_VALUE": 0.05,
 }
 
 def entity_similarity(a, b, threshold=70):

@@ -79,14 +79,12 @@ def add_data2db(image_path: str, db_path: str = DB_PATH):
     similar_note_id = find_similar_note(
         cleaned_text, db_path=db_path, threshold=0.7)
 
-    # --- New: quick dedup check across recent texts using score
     try:
         last_texts = get_last_text_for_notes(db_path)
     except Exception:
         last_texts = {}
 
     for nid, prev_text in (last_texts or {}).items():
-        # compare canonical reflowed versions for robustness
         s_prev = reflow_sentences(prev_text or "", width=80)
         s_new = reflow_sentences(cleaned_text or "", width=80)
         score_info = score_and_categorize_texts(s_prev, s_new)
@@ -165,6 +163,7 @@ def add_data2db(image_path: str, db_path: str = DB_PATH):
         "entite_OPERATING_CONTEXT": json.dumps(entities.get("OPERATING_CONTEXT", []), ensure_ascii=False),
         "entite_PHONE_NUMBER": json.dumps(entities.get("PHONE_NUMBER", []), ensure_ascii=False),
         "entite_ELECTRICAL_VALUE": json.dumps(entities.get("ELECTRICAL_VALUE", []), ensure_ascii=False),
+        "entite_ABBREVIATION_UNKNOWN": json.dumps(entities.get("ABBREVIATION_UNKNOWN", []), ensure_ascii=False),
     }
 
     meta_id = insert_note_meta(
@@ -240,6 +239,7 @@ def add_audio2db(audio_path: str, transcription_brute: str, transcription_clean:
         "entite_OPERATING_CONTEXT": json.dumps(entities.get("OPERATING_CONTEXT", []), ensure_ascii=False),
         "entite_PHONE_NUMBER": json.dumps(entities.get("PHONE_NUMBER", []), ensure_ascii=False),
         "entite_ELECTRICAL_VALUE": json.dumps(entities.get("ELECTRICAL_VALUE", []), ensure_ascii=False),
+        "entite_ABBREVIATION_UNKNOWN": json.dumps(entities.get("ABBREVIATION_UNKNOWN", []), ensure_ascii=False),
     }
 
     meta_id = insert_note_meta(extracted_data, img_path_proc=None, db_path=db_path)
