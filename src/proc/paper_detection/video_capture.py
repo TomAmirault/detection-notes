@@ -6,13 +6,8 @@ if REPO_PATH not in sys.path:
     sys.path.insert(0, REPO_PATH)
 
 import cv2
-import time
 from src.proc.paper_detection.shape_detector import shape_detector
 from src.proc.paper_detection.save_detection import save_detection
-from src.proc.paper_detection.image_preprocessing import preprocessed_image
-
-# Timer
-start = time.time()
 
 # Choix de la caméra
 cap = cv2.VideoCapture(0)  # 0 pour la webcam par défaut, ou chemin vers une vidéo
@@ -33,7 +28,6 @@ while True:
     else:
         continue
 
-
     # Dessiner les contours sur l'image originale
     cv2.drawContours(img_show, possible_papers, -1, (0, 255, 0), 2)
 
@@ -52,14 +46,10 @@ while True:
     if len(possible_papers) > 0:
         save_detection(img, possible_papers)
 
-    cv2.imshow('Webcam', img_show)
+    cv2.imshow('Retour vidéo', img_show)
 
     if cv2.waitKey(1) == ord('q'):
         break
-
-    # # Timer
-    # if time.time() - start > 180:
-    #     break
 
 cap.release()
 cv2.destroyAllWindows()

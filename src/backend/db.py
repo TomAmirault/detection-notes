@@ -1,4 +1,3 @@
-# Ajoute le dossier racine du projet au sys.path pour permettre les imports internes
 from difflib import SequenceMatcher
 from typing import Optional, List, Dict, Tuple
 import time
@@ -36,18 +35,20 @@ def ensure_db(db_path: str = DB_PATH):
         transcription_brute     TEXT,
         transcription_clean     TEXT,
         texte_ajoute            TEXT,
-    img_path_proc           TEXT,
-    raw_json                TEXT,
+        confidence_score REAL DEFAULT 0.0,    
+        img_path_proc           TEXT,
+        raw_json                TEXT,
 
         -- Colonnes pour entités extraites
-        entite_GEO              TEXT,
-        entite_ACTOR            TEXT,
-        entite_DATETIME         TEXT,
-        entite_EVENT            TEXT,
-        entite_INFRASTRUCTURE   TEXT,
-        entite_OPERATING_CONTEXT TEXT,
-        entite_PHONE_NUMBER     TEXT,
-        entite_ELECTRICAL_VALUE TEXT,
+        entite_GEO                     TEXT,
+        entite_ACTOR                   TEXT,
+        entite_DATETIME                TEXT,
+        entite_EVENT                   TEXT,
+        entite_INFRASTRUCTURE          TEXT,
+        entite_OPERATING_CONTEXT       TEXT,
+        entite_PHONE_NUMBER            TEXT,
+        entite_ELECTRICAL_VALUE        TEXT,
+        entite_ABBREVIATION_UNKNOWN    TEXT,
 
         -- Colonne évènement
         evenement_id            TEXT
@@ -76,7 +77,8 @@ def insert_note_meta(meta: dict, img_path_proc: Optional[str] = None, db_path: s
         "INFRASTRUCTURE": json.loads(meta.get("entite_INFRASTRUCTURE") or "[]"),
         "OPERATING_CONTEXT": json.loads(meta.get("entite_OPERATING_CONTEXT") or "[]"),
         "PHONE_NUMBER": json.loads(meta.get("entite_PHONE_NUMBER") or "[]"),
-        "ELECTRICAL_VALUE": json.loads(meta.get("entite_ELECTRICAL_VALUE") or "[]")
+        "ELECTRICAL_VALUE": json.loads(meta.get("entite_ELECTRICAL_VALUE") or "[]"),
+        "ABBREVIATION_UNKNOWN": json.loads(meta.get("entite_ABBREVIATION_UNKNOWN") or "[]")
     }
 
     evenement_id = find_existing_event_id(entities_new, db_path)
@@ -92,6 +94,7 @@ def insert_note_meta(meta: dict, img_path_proc: Optional[str] = None, db_path: s
         meta.get("transcription_brute"),
         meta.get("transcription_clean"),
         meta.get("texte_ajoute"),
+        meta.get("confidence_score"),
         img_path_proc,
             meta.get("raw_json") or json.dumps(
             meta, ensure_ascii=False),  
@@ -104,6 +107,7 @@ def insert_note_meta(meta: dict, img_path_proc: Optional[str] = None, db_path: s
         meta.get("entite_OPERATING_CONTEXT"),
         meta.get("entite_PHONE_NUMBER"),
         meta.get("entite_ELECTRICAL_VALUE"),
+        meta.get("entite_ABBREVIATION_UNKNOWN"),
 
         evenement_id
     )
@@ -112,14 +116,14 @@ def insert_note_meta(meta: dict, img_path_proc: Optional[str] = None, db_path: s
     cur = con.cursor()
     cur.execute("""
         INSERT INTO notes_meta (
-            ts, note_id, transcription_brute, transcription_clean, texte_ajoute,
+            ts, note_id, transcription_brute, transcription_clean, texte_ajoute, confidence_score,
             img_path_proc, raw_json,
             entite_GEO, entite_ACTOR, entite_DATETIME, entite_EVENT,
             entite_INFRASTRUCTURE, entite_OPERATING_CONTEXT,
-            entite_PHONE_NUMBER, entite_ELECTRICAL_VALUE,
+            entite_PHONE_NUMBER, entite_ELECTRICAL_VALUE, entite_ABBREVIATION_UNKNOWN,
             evenement_id
         )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, row)
 
     con.commit()
@@ -135,9 +139,10 @@ def list_notes(limit: int = 20, db_path: str = DB_PATH) -> List[Dict]:
     cur = con.cursor()
     cur.execute("""
     SELECT id, ts, note_id, transcription_brute, transcription_clean, texte_ajoute, img_path_proc,
+               confidence_score,
                entite_GEO, entite_ACTOR, entite_DATETIME, entite_EVENT,
                entite_INFRASTRUCTURE, entite_OPERATING_CONTEXT,
-               entite_PHONE_NUMBER, entite_ELECTRICAL_VALUE,
+               entite_PHONE_NUMBER, entite_ELECTRICAL_VALUE, entite_ABBREVIATION_UNKNOWN,
                evenement_id
         FROM notes_meta
         ORDER BY ts DESC
@@ -368,9 +373,10 @@ def list_notes_by_note_id(note_id: str, db_path: str = DB_PATH, limit: int = 50)
     cur = con.cursor()
     cur.execute("""
     SELECT id, ts, note_id, transcription_brute, transcription_clean, texte_ajoute, img_path_proc,
+               confidence_score,
                entite_GEO, entite_ACTOR, entite_DATETIME, entite_EVENT,
                entite_INFRASTRUCTURE, entite_OPERATING_CONTEXT,
-               entite_PHONE_NUMBER, entite_ELECTRICAL_VALUE,
+               entite_PHONE_NUMBER, entite_ELECTRICAL_VALUE, entite_ABBREVIATION_UNKNOWN,
                evenement_id
         FROM notes_meta
         WHERE note_id = ?
@@ -392,9 +398,10 @@ def list_notes_by_evenement_id(evenement_id: str, db_path: str = DB_PATH, limit:
     cur = con.cursor()
     cur.execute("""
     SELECT id, ts, note_id, transcription_brute, transcription_clean, texte_ajoute, img_path_proc,
+               confidence_score,
                entite_GEO, entite_ACTOR, entite_DATETIME, entite_EVENT,
                entite_INFRASTRUCTURE, entite_OPERATING_CONTEXT,
-               entite_PHONE_NUMBER, entite_ELECTRICAL_VALUE,
+               entite_PHONE_NUMBER, entite_ELECTRICAL_VALUE, entite_ABBREVIATION_UNKNOWN,
                evenement_id
         FROM notes_meta
         WHERE evenement_id = ?
@@ -415,7 +422,8 @@ def find_existing_event_id(entities_new: Dict, db_path: str = DB_PATH) -> Option
     cur = con.cursor()
     cur.execute("""
         SELECT evenement_id, entite_GEO, entite_DATETIME, entite_EVENT, entite_ACTOR,
-               entite_INFRASTRUCTURE, entite_OPERATING_CONTEXT, entite_PHONE_NUMBER, entite_ELECTRICAL_VALUE
+               entite_INFRASTRUCTURE, entite_OPERATING_CONTEXT, entite_PHONE_NUMBER,
+               entite_ELECTRICAL_VALUE, entite_ABBREVIATION_UNKNOWN
         FROM notes_meta
         WHERE evenement_id IS NOT NULL
     """)
@@ -429,7 +437,8 @@ def find_existing_event_id(entities_new: Dict, db_path: str = DB_PATH) -> Option
             "INFRASTRUCTURE": json.loads(row["entite_INFRASTRUCTURE"] or "[]"),
             "OPERATING_CONTEXT": json.loads(row["entite_OPERATING_CONTEXT"] or "[]"),
             "PHONE_NUMBER": json.loads(row["entite_PHONE_NUMBER"] or "[]"),
-            "ELECTRICAL_VALUE": json.loads(row["entite_ELECTRICAL_VALUE"] or "[]")
+            "ELECTRICAL_VALUE": json.loads(row["entite_ELECTRICAL_VALUE"] or "[]"),
+            "ABBREVIATION_UNKNOWN": json.loads(row["entite_ABBREVIATION_UNKNOWN"] or "[]")
         }
 
         if same_event(entities_new, entities_existing)[0]:

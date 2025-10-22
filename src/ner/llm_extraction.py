@@ -104,7 +104,8 @@ def extract_entities(text: str) -> Dict[str, List[str]]:
     labels = [
         "GEO", "ACTOR", "DATETIME", "EVENT",
         "INFRASTRUCTURE", "OPERATING_CONTEXT",
-        "PHONE_NUMBER", "ELECTRICAL_VALUE"
+        "PHONE_NUMBER", "ELECTRICAL_VALUE", 
+        "ABBREVIATION_UNKNOWN"
     ]
 
     if not text.strip():
@@ -129,6 +130,11 @@ def extract_entities(text: str) -> Dict[str, List[str]]:
     
     Typiquement, les centres opérationnels sont des ACTOR (COSE suivis juste après d'une ville est un ACTOR entier). 
     
+    Règle supplémentaire :
+    - Si une **suite d’au moins 3 lettres majuscules consécutives** (ex. `NIPCCO`, `ACR`) apparaît dans le texte et **ne correspond à aucune autre catégorie identifiable** (ni ACTOR, ni INFRASTRUCTURE, ni autre), alors **et seulement dans ce cas**, tu dois l’extraire dans la catégorie **`ABBREVIATION_UNKNOWN`**.
+    - Autrement dit, **`ABBREVIATION_UNKNOWN`** est une **catégorie de dernier recours**, utilisée uniquement pour les abréviations qui **n’ont aucun sens clair ou identifiable** dans le contexte.
+    - Si une abréviation peut correspondre à une autre catégorie (ex. `SNCF`, 'EDF' ou `RTE` = ACTOR), **tu dois toujours la classer dans la catégorie la plus pertinente**, et **jamais dans `ABBREVIATION_UNKNOWN`**.
+
     Texte :
     \"\"\"{translated_text}\"\"\"
 
@@ -158,6 +164,10 @@ def extract_entities(text: str) -> Dict[str, List[str]]:
         Numéros de téléphone.
     - ELECTRICAL_VALUE :
         Valeurs électriques, comme "225kV", "63 kV", "400 MW", etc.
+    - ABBREVIATION_UNKNOWN :  
+        Abréviations en lettres majuscules (au moins 3 caractères) **qui ne correspondent à aucune autre catégorie identifiable** et dont le sens **n’est pas interprétable dans le contexte**.  
+        Exemple : `NIPCCO`, `ACR` (si leur signification n’est pas reconnue).
+
 
     Règles :
     - Ne produis que du JSON strict valide.
@@ -174,7 +184,8 @@ def extract_entities(text: str) -> Dict[str, List[str]]:
     "INFRASTRUCTURE": [],
     "OPERATING_CONTEXT": [],
     "PHONE_NUMBER": [],
-    "ELECTRICAL_VALUE": []
+    "ELECTRICAL_VALUE": [],
+    "ABBREVIATION_UNKNOWN": []
     }}
     
     Quelques exemples de mots par catégories : 
@@ -185,7 +196,8 @@ def extract_entities(text: str) -> Dict[str, List[str]]:
     "INFRASTRUCTURE": ["Ligne", "N-1", "Transformateur"], 
     "OPERATING_CONTEXT": ["invalide en HO", "Régime surveillance dispatching"], 
     "PHONE_NUMBER": ["06 12 34 56 78", "+33 9 38 39 29 30"], 
-    "ELECTRICAL_VALUE": ["225kV", "38 kV", "400 GW"] }} 
+    "ELECTRICAL_VALUE": ["225kV", "38 kV", "400 GW"],
+    "ABBREVIATION_UNKNOWN": ["NIPCCO", "ACR"]}} 
     """
 
     # Appel API Mistral
@@ -221,4 +233,4 @@ def extract_entities(text: str) -> Dict[str, List[str]]:
 
 # Test
 if __name__ == "__main__":
-    print(extract_entities("Etude RDCR Caen Cherbourg 225kV au +33 3 93 93 93 93"))
+    print(extract_entities("Penser au format JSON et a faire le TCR."))

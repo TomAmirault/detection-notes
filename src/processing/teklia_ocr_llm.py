@@ -1,19 +1,14 @@
-import sys
-import os
-REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
-if REPO_PATH not in sys.path:
-    sys.path.insert(0, REPO_PATH)
-
-from src.utils.image_utils import *
-
-import re
+import requests
+import os, re
 from mistralai import Mistral
 from dotenv import load_dotenv
 
 # Charger clé API
 load_dotenv()
-api_key = os.getenv("MISTRAL_API_KEY")
-client = Mistral(api_key=api_key)
+mistral_api_key = os.getenv("MISTRAL_API_KEY")
+teklia_api_key = os.getenv("TEKLIA_API_KEY")
+
+client = Mistral(api_key=mistral_api_key)
 
 
 # --- Pré-process : collapse des lignes de continuation ---
@@ -125,19 +120,39 @@ def postprocess_normalized(text: str) -> str:
 
 # --- Fonction principale ---
 def image_transcription(image_path: str) -> str:
-    base64_image = encode_image(image_path)
 
     # 1. OCR brut
-    response = client.ocr.process(
-        model="mistral-ocr-latest",
-        document={
-            "type": "image_url",
-            "image_url": f"data:image/jpeg;base64,{base64_image}"
-        },
-        include_image_base64=True
-    )
-    ocr_text = response.pages[0].markdown.strip()
-    print("=== OCR brut ===\n", ocr_text)
+    url = 'https://atr.ocelus.teklia.com/api/v1/transcribe/'
+    headers = {
+        'API-Key': teklia_api_key
+    }
+    files = {
+        'image': open(image_path, 'rb')
+    }
+    params = {
+        'language': 'fr'
+    }
+    response = requests.post(url, headers=headers, files=files, params=params)
+
+    if response.status_code != 200:
+        raise Exception(f"Erreur OCR Teklia : {response.status_code} - {response.text}")
+    
+    ocr_text = ""
+    confidence_per_line = []
+    char_per_line = []
+    for line in response.json()['results']:
+        if line['confidence'] >= 0.5:
+            ocr_text += line['text'] + "\n"
+            confidence_per_line.append(line['confidence'])
+            char_per_line.append(len(line['text']))
+        print(line['confidence'], line['text'])
+
+    if len(ocr_text) > 0:
+        ocr_text_confidence = sum(conf*nb_chars for conf, nb_chars in zip(confidence_per_line, char_per_line)) / max(1, sum(char_per_line))
+    else:
+        ocr_text_confidence = 0.5
+
+    print("=== OCR brut ===\n", ocr_text, "\nScore de confiance OCR moyen pondéré :", ocr_text_confidence)
 
     # 2. Pré-process
     ocr_text = pre_collapse_continuations(ocr_text)
@@ -257,4 +272,4 @@ Contenu à traiter :
     clean_text = postprocess_normalized(clean_text)
     print("=== LLM après post-process ===\n", clean_text)
 
-    return ocr_text, clean_text, 0.5
+    return ocr_text, clean_text, ocr_text_confidence

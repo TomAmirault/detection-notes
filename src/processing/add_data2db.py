@@ -1,6 +1,7 @@
 import json
 import uuid
 import sys
+from difflib import SequenceMatcher
 
 # Ajoute la racine du projet au sys.path pour permettre les imports internes
 import sys
@@ -10,6 +11,8 @@ if REPO_PATH not in sys.path:
     sys.path.insert(0, REPO_PATH)
 
 from src.processing.mistral_ocr_llm import image_transcription
+#from src.processing.teklia_ocr_llm import image_transcription
+
 from src.backend.db import (
     DB_PATH,
     insert_note_meta,
@@ -17,7 +20,6 @@ from src.backend.db import (
     find_similar_note ,
     find_similar_image
 )
-from src.processing.mistral_ocr_llm import image_transcription
 from src.ner.llm_extraction import extract_entities
 from src.utils.text_utils import (
     has_meaningful_line,
@@ -52,11 +54,8 @@ def add_data2db(image_path: str, db_path: str = DB_PATH):
         print("L'image captée a déjà été enregistrée en BBD.")
         return None
 
-    # 0) Encodage de l'image en base64 (pour Mistral OCR)
-    encoded_image = encode_image(image_path)
-
     # 1) OCR + normalisation
-    ocr_text, cleaned_text = image_transcription(encoded_image)
+    ocr_text, cleaned_text, confidence_score = image_transcription(image_path)
 
     # >>> Pare-feu avant toute logique de DB
     buggy, reason = is_htr_buggy(ocr_text, cleaned_text)
@@ -79,21 +78,37 @@ def add_data2db(image_path: str, db_path: str = DB_PATH):
     similar_note_id = find_similar_note(
         cleaned_text, db_path=db_path, threshold=0.7)
 
-    # --- New: quick dedup check across recent texts using score
     try:
         last_texts = get_last_text_for_notes(db_path)
     except Exception:
         last_texts = {}
 
+
+    # 1) Cas des notes courtes 
+
+
+
     for nid, prev_text in (last_texts or {}).items():
-        # compare canonical reflowed versions for robustness
         s_prev = reflow_sentences(prev_text or "", width=80)
         s_new = reflow_sentences(cleaned_text or "", width=80)
         score_info = score_and_categorize_texts(s_prev, s_new)
-        if score_info.get("score", 0.0) > 0.95:
-            print(f"[SKIP] Similar existing note {nid} (score={score_info['score']}) — insertion skipped for {image_path}")
-            return None
 
+        # print(f"""score_F1_Jacquard={score_info['score']} \n
+        #       score_seqm={SequenceMatcher(None, s_prev, s_new).ratio()} \n
+        #             Note de la BDD \n
+        #             {len(s_prev)}]{s_prev} \n
+        #             est très similaire à la nouvelle note \n
+        #             {len(s_new)}{s_new}""")
+
+        if len(s_prev) - len(s_new) < 20 and len(s_new) - len(s_prev) < 20 and SequenceMatcher(None, s_prev, s_new).ratio() > 0.5 :
+            print(f"""Brigade anti-répétition : note similaire trouvée en BDD avec score : {SequenceMatcher(None, s_prev, s_new).ratio()} \n
+                  Note de la BDD \n
+             {len(s_prev)}]{s_prev} \n
+             est très similaire à la nouvelle note \n
+             {len(s_new)}{s_new}""")
+            None
+    
+    
 
     diff_human = ""
     diff_json = []
@@ -155,6 +170,7 @@ def add_data2db(image_path: str, db_path: str = DB_PATH):
         "transcription_brute": ocr_text,        # <— OCR brut
         "transcription_clean": cleaned_text,     # <— texte normalisé stable
         "texte_ajoute": diff_human,
+        "confidence_score": confidence_score,
         "img_path_proc": image_path,
         "raw_json": json.dumps(raw, ensure_ascii=False),
         "entite_GEO": json.dumps(entities.get("GEO", []), ensure_ascii=False),
@@ -165,6 +181,7 @@ def add_data2db(image_path: str, db_path: str = DB_PATH):
         "entite_OPERATING_CONTEXT": json.dumps(entities.get("OPERATING_CONTEXT", []), ensure_ascii=False),
         "entite_PHONE_NUMBER": json.dumps(entities.get("PHONE_NUMBER", []), ensure_ascii=False),
         "entite_ELECTRICAL_VALUE": json.dumps(entities.get("ELECTRICAL_VALUE", []), ensure_ascii=False),
+        "entite_ABBREVIATION_UNKNOWN": json.dumps(entities.get("ABBREVIATION_UNKNOWN", []), ensure_ascii=False),
     }
 
     meta_id = insert_note_meta(
@@ -230,6 +247,7 @@ def add_audio2db(audio_path: str, transcription_brute: str, transcription_clean:
         "transcription_brute": transcription_brute,
         "transcription_clean": transcription_clean,
         "texte_ajoute": diff_human,
+        "confidence_score": 0.5,
         "img_path_proc": None,
         "raw_json": json.dumps(raw, ensure_ascii=False),
         "entite_GEO": json.dumps(entities.get("GEO", []), ensure_ascii=False),
@@ -240,6 +258,7 @@ def add_audio2db(audio_path: str, transcription_brute: str, transcription_clean:
         "entite_OPERATING_CONTEXT": json.dumps(entities.get("OPERATING_CONTEXT", []), ensure_ascii=False),
         "entite_PHONE_NUMBER": json.dumps(entities.get("PHONE_NUMBER", []), ensure_ascii=False),
         "entite_ELECTRICAL_VALUE": json.dumps(entities.get("ELECTRICAL_VALUE", []), ensure_ascii=False),
+        "entite_ABBREVIATION_UNKNOWN": json.dumps(entities.get("ABBREVIATION_UNKNOWN", []), ensure_ascii=False),
     }
 
     meta_id = insert_note_meta(extracted_data, img_path_proc=None, db_path=db_path)

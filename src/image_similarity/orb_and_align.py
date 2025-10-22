@@ -82,7 +82,11 @@ def save_comparison(img1, img2_aligned, overlay, tranform1, transform2, diff, is
     fig.colorbar(im2, ax=axes[1, 1], orientation='vertical')
     fig.colorbar(imd, ax=axes[1, 2], orientation='vertical')
 
-    fig.suptitle("Les 2 feuilles de papier sont identiques :" + str(isSimilar))
+
+    if isSimilar:
+        fig.suptitle("[Comparaison visuelle] Image similaire trouvée")
+    else:
+        fig.suptitle("[Comparaison visuelle] Pas d'image similaire trouvée")
 
     stamp = f"{datetime.now():%Y%m%d-%H%M%S}-{datetime.now().microsecond//1000:03d}"
     file_name =f"logs/image-comparison/comparison_{stamp}.jpg"
