@@ -50,7 +50,7 @@ def fetch_notes(limit: int = 50,
                 ts_to: Optional[int] = None,
                 q: str = "") -> List[Dict[str, Any]]:
     sql = """
-    SELECT id, ts, note_id, transcription_brute, transcription_clean, texte_ajoute,
+    SELECT id, ts, note_id, transcription_brute, transcription_clean, texte_ajoute, confidence_score,
            img_path_proc,
                entite_GEO, entite_ACTOR, entite_DATETIME, entite_EVENT,
                entite_INFRASTRUCTURE, entite_OPERATING_CONTEXT,
@@ -278,7 +278,10 @@ with open("src/frontend/log.txt", "w") as f:
     f.write("Nouveau contenu du log.\n\n")
 
 # Affichage en cartes
-for n in notes:  
+for n in notes:
+
+    score_confiance = n.get("confidence_score")
+
     st.divider()
     # Colonnes principales : meta, résumé et entités
     cols = st.columns([1, 3, 2])
@@ -379,14 +382,37 @@ for n in notes:
         # Colonnes dans l'expander
         detail_cols = st.columns([2,2])
         
+        # Image ou audio
+        img_path = safe_image(n.get("img_path_proc"))
+    
+        trans = n.get("transcription_clean")
+        
+        tmp_dir = os.path.join(os.path.join(os.path.dirname(__file__), "../../src/transcription/tmp"))
+        audio_json_path = os.path.join(tmp_dir, "transcriptions_log.json")
+        
+        audio_path = None
+        audio_score = None
+        if os.path.exists(audio_json_path):
+            with open(audio_json_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            for d in data:
+                if trans == d.get("transcription_clean"):
+                    audio_path = tmp_dir + "/" + d.get("filename")
+                    audio_score = d.get("score")
+                    try:
+                        audio_score = float(audio_score) if audio_score is not None else None
+                    except Exception:
+                        audio_score = None
+
         
         with detail_cols[0]:
 
             if img_path:
-                st.markdown(f"**TRANSCRIPTION COMPLETE**")
-            
+                st.markdown(f"**Fiabilité de la transcription:**  **{evaluation_fiabilite(score_confiance if score_confiance is not None else 0.0)}** (Score = {round(score_confiance,2)})")
+
+
             elif audio_path and os.path.exists(audio_path):
-                st.markdown(f"**TRANSCRIPTION COMPLETE:**  **{evaluation_fiabilite(audio_score)}** (Score = {audio_score})")
+                st.markdown(f"**Fiabilité de la transcription:**  **{evaluation_fiabilite(audio_score if audio_score is not None else 0.0)}** (Score = {audio_score})")
 
             st.markdown("**Transcription brute**")
             st.markdown(f"```\n{n.get('transcription_brute') or '—'}\n```")
