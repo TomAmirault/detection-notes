@@ -123,7 +123,7 @@ def insert_note_meta(meta: dict, img_path_proc: Optional[str] = None, db_path: s
             entite_PHONE_NUMBER, entite_ELECTRICAL_VALUE, entite_ABBREVIATION_UNKNOWN,
             evenement_id
         )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, row)
 
     con.commit()
