@@ -100,7 +100,7 @@ def add_data2db(image_path: str, db_path: str = DB_PATH):
         #             est très similaire à la nouvelle note \n
         #             {len(s_new)}{s_new}""")
 
-        if len(s_prev) - len(s_new) < 20 and len(s_new) - len(s_prev) < 20 and SequenceMatcher(None, s_prev, s_new).ratio() > 0.5 :
+        if len(s_prev) - len(s_new) < 35 and len(s_new) - len(s_prev) < 35 and SequenceMatcher(None, s_prev, s_new).ratio() > 0.5 :
             print(f"""Brigade anti-répétition : note similaire trouvée en BDD avec score : {SequenceMatcher(None, s_prev, s_new).ratio()} \n
                   Note de la BDD \n
              {len(s_prev)}]{s_prev} \n
