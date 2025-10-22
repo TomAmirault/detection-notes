@@ -34,7 +34,7 @@ list_notes_by_evenement_id = db.list_notes_by_evenement_id
 
 # --- Config ---
 DB_PATH = os.environ.get("RTE_DB_PATH", "data/db/notes.sqlite")
-PAGE_TITLE = "RTE Notes — V0"
+PAGE_TITLE = "Historique Chronologique"
 REFRESH_SECONDS = 5  # auto refresh (0 = désactiver)
 
 
@@ -123,9 +123,9 @@ def evaluation_fiabilite(score: float) -> str:
         return "Très fiable"
     elif score >= 0.75:
         return "Fiable"
-    elif score >= 0.60:
-        return "Moyennement fiable"
-    elif score >= 0.40:
+    elif score >= 0.50:
+        return "Fiable"
+    elif score >= 0.30:
         return "Peu fiable"
     else:
         return "Pas fiable"
@@ -139,7 +139,7 @@ st.title(PAGE_TITLE)
 
 # --- AJOUT DU BOUTON DE NAVIGATION ---
 # Placez ce bloc où vous souhaitez voir le bouton
-if st.button("Aller à la nouvelle page"):
+if st.button("Consulter la synthèse"):
     st.switch_page("pages/nouvelle_page.py") # Chemin vers votre nouvelle page
 # ------------------------------------
 
@@ -293,7 +293,7 @@ for n in notes:
     audio_json_path = os.path.join(tmp_dir, "transcriptions_log.json")
     
     audio_path = None
-    audio_score = 0
+    audio_score = 1
     audio_start = None
     if os.path.exists(audio_json_path):
         with open(audio_json_path, "r", encoding="utf-8") as f:
@@ -304,6 +304,16 @@ for n in notes:
                 audio_score = d.get("score")
                 audio_start = d.get("start_time")
                 
+
+    if audio_score > 0.3 :
+        # Colonne gauche : méta
+        with cols[0]:
+            st.markdown(f"**ID:** {n['id']}")
+            
+            if audio_path and os.path.exists(audio_path):
+                st.markdown(f"**TS:** {audio_start}")
+                with open("src/frontend/log.txt", "a") as f:  
+                    f.write(f"{audio_start}\n")
 
     # Colonne gauche : méta
     with cols[0]:

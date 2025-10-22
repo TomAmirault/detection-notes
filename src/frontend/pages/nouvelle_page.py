@@ -3,15 +3,14 @@ from datetime import datetime, timedelta
 import re
 import os
 from src.frontend.mistral import synthèse
+import markdown2
 
-REFRESH_SECONDS = 30
 MAX_GROUP_DURATION = 2 #minutes
 MAX_PAUSE = 30  # seconde         
 
 
 
-st.set_page_config(page_title="Cartes Logs (1min)", layout="wide")
-
+st.set_page_config(page_title="Cartes Logs", layout="wide")
 
 
 
@@ -60,12 +59,14 @@ if current_group:
 
 
 # === Couleurs pour les cartes ===
-couleurs = ["#264653", "#2a9d8f", "#e76f51", "#1d3557", "#6a4c93"]
-st.title("RTE : Storyline")
+couleurs = ["#ff6f61", "#6b5b95", "#88b04b", "#f7cac9", "#92a8d1"]
+st.title("Synthèses Chronologique")
 
 if st.button("Retour à l'accueil"):
     st.switch_page("app_streamlit.py")
-    
+
+
+groupes = list(reversed(groupes))
 for i, groupe in enumerate(groupes):
     couleur = couleurs[i % len(couleurs)]
     
@@ -73,9 +74,12 @@ for i, groupe in enumerate(groupes):
     date_start = groupe[0].strftime("%Y-%m-%d %H:%M:%S")
     date_end = groupe[1].strftime("%Y-%m-%d %H:%M:%S")
     contenu = groupe[2]  
-    syhtese = synthèse(contenu)
+    synthese = synthèse(contenu)
 
 
+      
+
+    synthese_html = markdown2.markdown(synthese)
     st.markdown(
         f"""
         <div style="
@@ -84,10 +88,10 @@ for i, groupe in enumerate(groupes):
             padding:15px;
             box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
             margin-bottom:20px;
+            font-family: Arial;
         ">
-            <h4>Sythèse {i+1} : {date_start} → {date_end}</h4>
-            <pre style="white-space: pre-wrap; font-family: monospace;">{syhtese}</pre>
-        </div>
+            <h4>Synthèse {i+1} : {date_start} → {date_end}</h4>
+            {synthese_html}
         """,
         unsafe_allow_html=True
     )
