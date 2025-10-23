@@ -25,7 +25,7 @@ min_duration_on_choice = 3
 
 # Si une pause est plus courte que 10 secondes, elle peut être remplie ou fusionnée avec les segments voisins.
 min_duration_off_choice = 10
-prompt = "Abréviations officielles (ne pas développer ; corrige variantes proches vers la forme officielle): SNCF, ABC, RSD, TIR, PF, GEH, SMACC, COSE, TRX, VPL, MNV, N-1, COSE-P"
+prompt = "Abréviations officielles (ne pas développer ; corrige variantes proches vers la forme officielle): RACR, RDCR, TIR, PO, RSD, SUAV, MNV, PF, CSS, GEH, PDM, SMACC, HO, BR, GT, TST, CCO, FDE, DIFFB, RADA, TR, RA, CTS, CEX, COSE, COSE-P, SNCF, ABC, TRX, VPL, N-1"
 
 PAUSE = True
 

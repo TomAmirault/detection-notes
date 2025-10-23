@@ -19,7 +19,7 @@ from nettoyage_audio import nettoyer_transcription_audio
 
 model = whisper.load_model("large-v3-turbo")
 
-def transcribe_whisper_clean(audio_path, prompt="Abréviations officielles (ne pas développer ; corrige variantes proches vers la forme officielle): SNCF, ABC, RSD, TIR, PF, GEH, SMACC, COSE, TRX, VPL, MNV, N-1, COSE-P", pause=True):
+def transcribe_whisper_clean(audio_path, prompt="Abréviations officielles (ne pas développer ; corrige variantes proches vers la forme officielle): RACR, RDCR, TIR, PO, RSD, SUAV, MNV, PF, CSS, GEH, PDM, SMACC, HO, BR, GT, TST, CCO, FDE, DIFFB, RADA, TR, RA, CTS, CEX, COSE, COSE-P, SNCF, ABC, TRX, VPL, N-1", pause=True):
     """
     Transcrit un fichier audio en texte à l’aide d’un modèle Whisper.
 

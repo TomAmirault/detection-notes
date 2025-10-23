@@ -23,8 +23,6 @@ Ta tâche est de produire une **synthèse très courte, directe et complète**, 
 - Mentionner les appels ou contacts à prévoir avec les horaires.
 - Signaler tout incident ou événement particulier.
 - Résumer les changements importants (ex : changement de propriétaire, modifications de liaison).
-- '~' signifie que l'action ou la note a été **supprimée ou terminée**.  
-- '+' signifie qu'il s'agit d'une **nouvelle action ou ajout**.  
 
 Voici les notes : 
     <<<

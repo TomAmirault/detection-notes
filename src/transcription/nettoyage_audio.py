@@ -39,7 +39,8 @@ RÈGLES DE CORRECTION :
    - Ne pas développer les abréviations.  
    - Corrige les variantes proches vers la forme officielle.  
    - Liste des abréviations à respecter :  
-     SNCF, ABC, RSD, TIR, PF, GEH, SMACC, COSE, TRX, VPL, MNV, N-1, COSE-P.  
+     "RACR, RDCR, TIR, PO, RSD, SUAV, MNV, PF, CSS, GEH, PDM, SMACC, HO, BR, GT, TST, CCO, FDE, DIFFB, RADA, TR, RA, CTS, CEX, COSE, COSE-P, SNCF, ABC, TRX, VPL, N-1"
+
 
 8) **Noms de villes françaises** :  
    - Corrige les noms de villes mal transcrits vers leur forme correcte officielle.  
@@ -83,3 +84,9 @@ if __name__ == "__main__":
     on a aussi verifié le relais principal et on a rien detecté d'anormal
     """
     print(nettoyer_transcription_audio(transcription))
+
+
+
+
+
+
