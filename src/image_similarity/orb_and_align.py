@@ -18,9 +18,9 @@ print_graphs = False
 
 # Hyperparamètres
 topMatchesFactor = 0.3       # Sélectivité des matches entre keypoints
-gray_threshold = 135           # entre 120 et 145
+gray_threshold = 140           # entre 120 et 145
 minkowski_mean_order = 4        # (best = 4) Ordre de la moyenne de Minkowski utilisée pour l'interpolation des pixels dans le redimensionnement des images
-diff_threshold = 110     # 40 si Minkowski_mean_order = 2, 110 si = 4 (posible de mettre un peu plus en threshold si on veut être plus restrictif, mais risque de louper une petite modif), 180 si = 10
+diff_threshold = 115     # 40 si Minkowski_mean_order = 2, 110 si = 4 (posible de mettre un peu plus en threshold si on veut être plus restrictif, mais risque de louper une petite modif), 180 si = 10
 shape_of_diff = (40, 40)
 
 def show2_with_cursor(img1, img2):
@@ -117,7 +117,9 @@ def isSimilar(old_img_path:Path, new_img_path:Path) -> bool:
          # ---- DIFFERENCES SANS TRANSFOS ----
 
         overlay_wo = np.zeros_like(old_img)
-        cv2.addWeighted(old_img, 0.5, new_img, 0.5, 0, overlay_wo)
+        height, width, channels = old_img.shape
+        new_img_overlay = cv2.resize(new_img, (width, height))
+        cv2.addWeighted(old_img, 0.5, new_img_overlay, 0.5, 0, overlay_wo)
 
         gray1_wo = img1.copy()
         gray2_wo = img2.copy()
