@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import re
 import os
 from src.frontend.mistral import synthèse
+from src.utils.text_utils import clean_added_text_for_ner
 import markdown2
 
 MAX_GROUP_DURATION = 2 #minutes
@@ -83,6 +84,8 @@ for i, groupe in enumerate(groupes):
     date_start = groupe[0].strftime("%Y-%m-%d %H:%M:%S")
     date_end = groupe[1].strftime("%Y-%m-%d %H:%M:%S")
     contenu = groupe[2]  
+    
+    contenu = clean_added_text_for_ner(contenu)
     synthese = get_synthese(contenu)
 
 
