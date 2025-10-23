@@ -18,7 +18,7 @@ print_graphs = False
 
 # Hyperparamètres
 topMatchesFactor = 0.2       # Sélectivité des matches entre keypoints
-gray_threshold = 125
+gray_threshold = 135           # entre 120 et 145
 minkowski_mean_order = 4        # (best = 4) Ordre de la moyenne de Minkowski utilisée pour l'interpolation des pixels dans le redimensionnement des images
 diff_threshold = 110     # 40 si Minkowski_mean_order = 2, 110 si = 4 (posible de mettre un peu plus en threshold si on veut être plus restrictif, mais risque de louper une petite modif), 180 si = 10
 shape_of_diff = (40, 40)
@@ -60,27 +60,34 @@ def show2_with_cursor(img1, img2):
     ax2.format_coord = format_coord1
     plt.show()
 
-def save_comparison(img1, img2_aligned, overlay, tranform1, transform2, diff, isSimilar):
+def save_comparison(matches_drawn, img2_aligned, overlay, gray1, gray2, gray1_mink, gray2_mink, diff, isSimilar):
 
-    fig, axes = plt.subplots(2, 3, figsize=(8, 8))
+    fig, axes = plt.subplots(2, 4, figsize=(8, 8))
 
-    axes[0, 0].imshow(img1)
-    axes[0, 0].set_title('Old image')
+    axes[0, 0].imshow(matches_drawn)
+    axes[0, 0].set_title('Matches')
     axes[0, 1].imshow(img2_aligned)
     axes[0, 1].set_title('New image')
     axes[0, 2].imshow(overlay)
     axes[0, 2].set_title('Overlay of both')
 
-    im1 = axes[1, 0].imshow(tranform1, cmap='gray')
-    axes[1, 0].set_title('Preprocessed old image')
-    im2 = axes[1, 1].imshow(transform2, cmap='gray')
-    axes[1, 1].set_title('Prepr. new image')
-    imd = axes[1, 2].imshow(diff, cmap='gray')
-    axes[1, 2].set_title('Difference')
+    im1 = axes[0, 3].imshow(gray1, cmap='gray')
+    axes[0, 3].set_title('Thresholded old image')
+    im2 = axes[1, 0].imshow(gray2, cmap='gray')
+    axes[1, 0].set_title('Thres. new image')
+    im3 = axes[1, 1].imshow(gray1_mink, cmap='gray')
+    axes[1, 1].set_title('Preprocessed old image')
+    im4 = axes[1, 2].imshow(gray2_mink, cmap='gray')
+    axes[1, 2].set_title('Prepr. new image')
 
-    fig.colorbar(im1, ax=axes[1, 0], orientation='vertical')
-    fig.colorbar(im2, ax=axes[1, 1], orientation='vertical')
-    fig.colorbar(imd, ax=axes[1, 2], orientation='vertical')
+    imd = axes[1, 3].imshow(diff, cmap='gray')
+    axes[1, 3].set_title('Difference')
+
+    fig.colorbar(im1, ax=axes[0, 3], orientation='vertical')
+    fig.colorbar(im2, ax=axes[1, 0], orientation='vertical')
+    fig.colorbar(im3, ax=axes[1, 1], orientation='vertical')
+    fig.colorbar(im4, ax=axes[1, 2], orientation='vertical')
+    fig.colorbar(imd, ax=axes[1, 3], orientation='vertical')
 
 
     if isSimilar:
@@ -109,12 +116,21 @@ def isSimilar(old_img_path:Path, new_img_path:Path) -> bool:
         keypoints1, descriptors1 = orb.detectAndCompute(img1, None)
         keypoints2, descriptors2 = orb.detectAndCompute(img2, None)
 
+        if descriptors1 is None or descriptors2 is None:
+            print("Pas assez de points d'intérêt pour comparer les images.")
+            return False
+
+        print(descriptors1.dtype,descriptors2.dtype)
+
         # - Matching des keypoints
         matcher = cv2.DescriptorMatcher_create(cv2.DESCRIPTOR_MATCHER_BRUTEFORCE_HAMMING)
         all_matches = list(matcher.match(descriptors1, descriptors2, None))
         sorted_matches = sorted(all_matches, key=lambda x: x.distance, reverse=False)
         numGoodMatches = int(len(sorted_matches) * topMatchesFactor)
         matches = sorted_matches[:numGoodMatches]
+
+        # Draw first keypoints and matches
+        matches_drawn = cv2.drawMatches(old_img,keypoints1,new_img,keypoints2,matches,None)
 
         # - Calcul de la transformation
         points1 = np.zeros((len(matches), 2), dtype = np.float32)
@@ -141,24 +157,26 @@ def isSimilar(old_img_path:Path, new_img_path:Path) -> bool:
         color2 = img2_reg
         gray1 = cv2.cvtColor(color1, cv2.COLOR_BGR2GRAY)
         gray2 = cv2.cvtColor(color2, cv2.COLOR_BGR2GRAY)
-        _, gray1 = cv2.threshold(gray1, gray_threshold, 255, cv2.THRESH_BINARY)
-        _, gray2 = cv2.threshold(gray2, gray_threshold, 255, cv2.THRESH_BINARY)
+        # _, gray1 = cv2.threshold(gray1, gray_threshold, 255, cv2.THRESH_BINARY)
+        # _, gray2 = cv2.threshold(gray2, gray_threshold, 255, cv2.THRESH_BINARY)
 
         # on inverse le blanc et le noir pour donner plus d'importance aux noirs lorsqu'on applique la moyenne de Minkowski
-        gray1 = cv2.bitwise_not(gray1)
-        gray2 = cv2.bitwise_not(gray2)
-        h = min(gray1.shape[0], gray2.shape[0])
-        w = min(gray1.shape[1], gray2.shape[1])
-        gray1 = minkowski_resize(gray1, shape_of_diff, minkowski_mean_order)
-        gray2 = minkowski_resize(gray2, shape_of_diff, minkowski_mean_order)
+        # gray1_inv = cv2.bitwise_not(gray1)
+        # gray2_inv = cv2.bitwise_not(gray2)
+        gray1_inv = 255 - gray1
+        gray2_inv = 255 - gray2
+        h = min(gray1_inv.shape[0], gray2_inv.shape[0])
+        w = min(gray1_inv.shape[1], gray2_inv.shape[1])
+        gray1_mink = minkowski_resize(gray1_inv, shape_of_diff, minkowski_mean_order)
+        gray2_mink = minkowski_resize(gray2_inv, shape_of_diff, minkowski_mean_order)
 
-        diff = cv2.absdiff(gray1, gray2)
+        diff = cv2.absdiff(gray1_mink, gray2_mink)
         diff_cut = (diff>diff_threshold) * diff
         answer = np.all(diff<=diff_threshold)
         print("Les 2 feuilles de papier sont identiques :", answer)
 
         # Pour le debug
-        save_comparison(old_img, img2_reg, overlay, gray1, gray2, diff_cut, answer)
+        save_comparison(matches_drawn, img2_reg, overlay, gray1, gray2, gray1_mink, gray2_mink, diff_cut, answer)
 
         return answer.item()
     except Exception as e:
@@ -166,17 +184,16 @@ def isSimilar(old_img_path:Path, new_img_path:Path) -> bool:
         return False
 
 if __name__ == '__main__':
-    tmp_dir = os.path.join(REPO_PATH, "tmp/")
+    tmp_dir = os.path.join(REPO_PATH, "tmp/test-similarity")
     files = os.listdir(tmp_dir)
     files = [f for f in files if f.endswith('.jpg')]
     print("Longueur de files :", len(files))
 
-    im0 = cv2.imread("/Users/noahparisse/Documents/Paris-digital-lab/P1 RTE/detection-notes/tmp/detected_sheet_20251016-145440_1357.1.jpg")
+    # im0_path = "/Users/noahparisse/Documents/Paris-digital-lab/P1 RTE/detection-notes/tmp/test-similarity/detection_20251022-102208-532_q0.jpg"
+    im0_path = "/Users/noahparisse/Documents/Paris-digital-lab/P1 RTE/detection-notes/tmp/test-similarity/detection_20251022-101029-996_q1.jpg"
+
     for f in files:
         if f.endswith(".jpg"):
             print("L'image traitée est :", f)
-            img = cv2.imread(os.path.join(tmp_dir, f))
-            if img is None:
-                print("img is None")
-                continue
-            isSimilar(im0, img)
+            filename = os.path.join(tmp_dir, f)
+            isSimilar(im0_path, filename)
