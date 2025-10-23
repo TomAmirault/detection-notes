@@ -9,6 +9,10 @@ MAX_GROUP_DURATION = 2 #minutes
 MAX_PAUSE = 30  # seconde         
 
 
+@st.cache_data
+def get_synthese(contenu):
+    return synthèse(contenu)
+
 
 st.set_page_config(page_title="Cartes Logs", layout="wide")
 
@@ -59,7 +63,12 @@ if current_group:
 
 
 # === Couleurs pour les cartes ===
-couleurs = ["#ff6f61", "#6b5b95", "#88b04b", "#f7cac9", "#92a8d1"]
+couleurs = [
+    "#009fe3",  # Bleu RTE principal
+    "#43b7ea",  # Bleu lumineux
+    "#85cff1",  # Bleu doux et clair
+    "#c7e7f8",  # Bleu très pâle
+]
 st.title("Synthèses Chronologique")
 
 if st.button("Retour à l'accueil"):
@@ -74,7 +83,7 @@ for i, groupe in enumerate(groupes):
     date_start = groupe[0].strftime("%Y-%m-%d %H:%M:%S")
     date_end = groupe[1].strftime("%Y-%m-%d %H:%M:%S")
     contenu = groupe[2]  
-    synthese = synthèse(contenu)
+    synthese = get_synthese(contenu)
 
 
       
