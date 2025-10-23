@@ -279,7 +279,7 @@ with open("src/frontend/log.txt", "w") as f:
 
 # Affichage en cartes
 for n in notes:
-
+    st.markdown("---")
     score_confiance = n.get("confidence_score")
 
     
@@ -306,7 +306,6 @@ for n in notes:
                 
 
     if audio_score > 0.3 :
-        st.divider()
         # Colonne gauche : méta
         with cols[0]:
             st.markdown(f"**ID:** {n['id']}")

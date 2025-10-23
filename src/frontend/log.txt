@@ -1,118 +1,25 @@
 Nouveau contenu du log.
 
-2025-10-22 16:50:26
-+ Ligne 1. Non, non, non, en rouge je crois qu’on peut mettre...
-Il faut l’enlever mais...
-2025-10-22 16:50:14
-+ Ligne 1. Tu as l’impression d’être là ? Pour l’audio ?
-En gros j’ai juste mis 0,5 la con semestrale.
-C’est vrai parce qu’en gros j’en ai pas à...
-2025-10-22 16:52:07
-~ Ligne 3. Ramené la liaison à Conpart
-2025-10-22 16:49:50
-+ Ligne 1. Merci.
-2025-10-22 16:49:25
-+ Ligne 1. Oh
-2025-10-22 16:50:38
-~ Ligne 3. Ramené la liaison à Concarneau
-2025-10-22 16:50:31
-~ Ligne 1. Numéro de report de Stage
-~ Ligne 2. Élargement du matériel à Vaunes
-2025-10-22 16:49:47
-~ Ligne 2. Ramené la liaison à Conpart
-2025-10-22 16:49:02
-+ Ligne 1. Voici le texte corrigé selon les règles demandées :
-
-Ok, c'est parfait.
-Aujourd'hui on se fait une retraite du liaison de **Cherbourg**, appel **COSE-P** après moi.
-Il faudra prévenir Thierry, toi aussi Prémy.
-Il faudra aussi appeler le **COSE**, à 19h26, à ne pas oublier.
-
-Il y a des problèmes abordés au changement de plan de l'université.
-Il y a des problèmes abordés au changement de plan de l'université.
-2025-10-22 16:49:35
-~ Ligne 2. Évacuement du matériel à Vaunes
-~ Ligne 3. Ramené la liaison à Concarneau
-2025-10-22 16:49:26
-~ Ligne 3. Ramené la liaison à Conpart
-2025-10-22 16:49:16
-~ Ligne 3. Ramené la liaison à Concarneau
-2025-10-22 16:49:11
-~ Ligne 1. Numéro de report de Stage
-2025-10-22 16:49:05
-~ Ligne 4. Référer Varennes à Trouville
-2025-10-22 16:49:01
-~ Ligne 3. Ramené la liaison à Con part
-~ Ligne 4. Relier Varennes à Trouville
-~ Ligne 1. Numéro de report de Liège
-2025-10-22 16:47:55
-+ Ligne 1. Les images que tu m’as envoyées, ça marchait bien ou pas ?
-Et est-ce que tu as des images où ça marchait pas bien ?
-
-Je vais tester parce que les images que tu m’as envoyées sont vraiment distinctes.
-2025-10-22 16:48:35
-+ Ligne 1. Report Stage
-2025-10-22 16:48:27
-~ Ligne 2. Ramené la liaison à Concarneau par RACR Varennes à Trouville
-- Ancienne ligne 1. Report de Stage
-2025-10-22 16:48:22
-~ Ligne 3. Ramené la liaison à Conflans Rdier Varennes à Trauville
-~ Ligne 1. Report de Stage
-2025-10-22 16:48:03
-~ Ligne 1. Numéro de report de Stage
-~ Ligne 3. Ramené la liaison à Conpart
-~ Ligne 4. Rôle Varennes à Trouville
-2025-10-22 16:47:54
-~ Ligne 3. Ramené la liaison d'où l'on part
-~ Ligne 4. Référer Varennes à Trouville
-2025-10-22 16:47:46
-~ Ligne 1. Numéro de report de Liège
-2025-10-22 16:47:06
-+ Ligne 1. Oui, faut que juste tu rajoutes un point d’interrogation quand il va fetch les données.
-En gros, tu fais une requête et tu demandes, tu mets les points d’interrogation pour dire combien tu veux de trucs.
-Juste faut rajouter un point d’interrogation.
-2025-10-22 16:47:25
-~ Ligne 3. Ramené la liaison à Conpart
-~ Ligne 4. Rôles Varennes à Trouville
-~ Ligne 1. Numéro de report de Stage
-2025-10-22 16:47:20
-~ Ligne 1. Report de Stage
-2025-10-22 16:46:57
-~ Ligne 1. Numéro de report de Stage
-+ Ligne 4. Rôles Varennes à Trouville
-2025-10-22 16:46:26
-+ Ligne 1. Report Dage
-2025-10-22 16:45:24
-+ Ligne 1. enfin que sur une image que l’autre,
-il paraît voir en gros en temps réel,
-c’est juste entre deux feuilles,
-vas-y.
-2025-10-22 16:45:45
-+ Ligne 1. Engagement du matériel à Vaunes
-+ Ligne 2. Ramené la liaison à Conpart
-2025-10-22 16:44:54
-+ Ligne 1. C’est excellent.
-Est-ce que tu aurais dans la cassette la même version d’Infile mais avec des petits petits portes ?
-Pour tester.
-
-Ah merde, je trouve que je fais…
-Ce que je veux dire, c’est que là, actuellement, il est capable de différencier.
-Parce qu’évidemment, il va bien qu’il y a plus de blanc que de noir.
-2025-10-22 16:44:26
-+ Ligne 1. En 2016, mais en étant...
-Tout ce que t’as expliqué, c’est faire des cours pixels.
-Ouai, on est... et avec une intercoursation, donc...
-
-Du coup, le cas à moi, c’est de...
-ça m’intéresse pas de cours, parce que je parle de c’est de base.
-Ouais...
-Ouais, parce que ça a des valeurs à voir.
-2025-10-22 16:44:50
-+ Ligne 5. Demain ?
-2025-10-22 16:43:53
-~ Ligne 3. Balancer sa
-2025-10-22 16:43:48
-+ Ligne 1. Appeler COSE-P demain matin
-+ Ligne 2. Relier la liaison Vannes - Chartres
-+ Ligne 3. Bubaxco 5A
-+ Ligne 4. Appeler M. Martin vendredi soir
+~ Ligne 1. Appel COSE-P pour check du NIPCCO de Basalle du N-1 ligne Paris-Versailles
+2025-10-23 11:04:12
+~ Ligne 1. Appel COSE-P pour check du NIPCCO de Basalle du N-1 ligne Paris-Versailles
+2025-10-23 11:03:11
++ Ligne 1. COSE-P pour check 2x NIPCCO
+2025-10-23 11:03:11
++ Ligne 1. COSE-P pour check 2x NIPCCO
+2025-10-23 11:02:51
++ Ligne 1. Check si NIPCCO de COSE-P
+2025-10-23 11:02:51
++ Ligne 1. Check si NIPCCO de COSE-P
+2025-10-23 11:00:59
++ Ligne 1. Ah oui, il enlève l’appel ici.
+2025-10-23 11:00:59
+2025-10-23 11:01:10
++ Ligne 1. Ah oui, il enlève l’appel ici.
+~ Ligne 1. COSE-P check si NIPCCO
+2025-10-23 11:01:10
+2025-10-23 11:00:50
+~ Ligne 1. COSE-P check si NIPCCO
++ Ligne 1. COSE-P pour check si NIPCCO de
+2025-10-23 11:00:50
++ Ligne 1. COSE-P pour check si NIPCCO de

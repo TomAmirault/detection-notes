@@ -17,7 +17,7 @@ from pathlib import Path
 print_graphs = False
 
 # Hyperparamètres
-topMatchesFactor = 0.2       # Sélectivité des matches entre keypoints
+topMatchesFactor = 0.3       # Sélectivité des matches entre keypoints
 gray_threshold = 135           # entre 120 et 145
 minkowski_mean_order = 4        # (best = 4) Ordre de la moyenne de Minkowski utilisée pour l'interpolation des pixels dans le redimensionnement des images
 diff_threshold = 110     # 40 si Minkowski_mean_order = 2, 110 si = 4 (posible de mettre un peu plus en threshold si on veut être plus restrictif, mais risque de louper une petite modif), 180 si = 10
@@ -157,8 +157,8 @@ def isSimilar(old_img_path:Path, new_img_path:Path) -> bool:
         color2 = img2_reg
         gray1 = cv2.cvtColor(color1, cv2.COLOR_BGR2GRAY)
         gray2 = cv2.cvtColor(color2, cv2.COLOR_BGR2GRAY)
-        # _, gray1 = cv2.threshold(gray1, gray_threshold, 255, cv2.THRESH_BINARY)
-        # _, gray2 = cv2.threshold(gray2, gray_threshold, 255, cv2.THRESH_BINARY)
+        _, gray1 = cv2.threshold(gray1, gray_threshold, 255, cv2.THRESH_BINARY)
+        _, gray2 = cv2.threshold(gray2, gray_threshold, 255, cv2.THRESH_BINARY)
 
         # on inverse le blanc et le noir pour donner plus d'importance aux noirs lorsqu'on applique la moyenne de Minkowski
         # gray1_inv = cv2.bitwise_not(gray1)
