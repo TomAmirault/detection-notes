@@ -60,7 +60,7 @@ def show2_with_cursor(img1, img2):
     ax2.format_coord = format_coord1
     plt.show()
 
-def save_comparison(matches_drawn, img2_aligned, overlay, gray1, gray2, gray1_mink, gray2_mink, diff, isSimilar):
+def save_comparison(matches_drawn, img2_aligned, overlay, gray1, gray2, gray1_mink, gray2_mink, diff, isSimilar, transfo):
 
     fig, axes = plt.subplots(2, 4, figsize=(8, 8))
 
@@ -89,11 +89,16 @@ def save_comparison(matches_drawn, img2_aligned, overlay, gray1, gray2, gray1_mi
     fig.colorbar(im4, ax=axes[1, 2], orientation='vertical')
     fig.colorbar(imd, ax=axes[1, 3], orientation='vertical')
 
-
-    if isSimilar:
-        fig.suptitle("[Comparaison visuelle] Image similaire trouvée")
+    if transfo:
+        if isSimilar:
+            fig.suptitle("[Comparaison visuelle] Image similaire à l'originale trouvée")
+        else:
+            fig.suptitle("[Comparaison visuelle] Pas d'image similaire à l'originale trouvée")
     else:
-        fig.suptitle("[Comparaison visuelle] Pas d'image similaire trouvée")
+        if isSimilar:
+            fig.suptitle("[Comparaison visuelle] Image similaire à l'image transformée trouvée")
+        else:
+            fig.suptitle("[Comparaison visuelle] Pas d'image similaire à l'image transformée trouvée")
 
     stamp = f"{datetime.now():%Y%m%d-%H%M%S}-{datetime.now().microsecond//1000:03d}"
     file_name =f"logs/image-comparison/comparison_{stamp}.jpg"
@@ -108,6 +113,35 @@ def isSimilar(old_img_path:Path, new_img_path:Path) -> bool:
         new_img = cv2.imread(new_img_path)
         img1 = cv2.cvtColor(old_img, cv2.COLOR_BGR2GRAY)
         img2 = cv2.cvtColor(new_img, cv2.COLOR_BGR2GRAY)
+
+         # ---- DIFFERENCES SANS TRANSFOS ----
+
+        overlay_wo = np.zeros_like(old_img)
+        cv2.addWeighted(old_img, 0.5, new_img, 0.5, 0, overlay_wo)
+
+        gray1_wo = img1.copy()
+        gray2_wo = img2.copy()
+        _, gray1_wo = cv2.threshold(gray1_wo, gray_threshold, 255, cv2.THRESH_BINARY)
+        _, gray2_wo = cv2.threshold(gray2_wo, gray_threshold, 255, cv2.THRESH_BINARY)
+
+        # on inverse le blanc et le noir pour donner plus d'importance aux noirs lorsqu'on applique la moyenne de Minkowski
+        gray1_wo_inv = 255 - gray1_wo
+        gray2_wo_inv = 255 - gray2_wo
+        h = min(gray1_wo_inv.shape[0], gray2_wo_inv.shape[0])
+        w = min(gray1_wo_inv.shape[1], gray2_wo_inv.shape[1])
+        gray1_mink_wo = minkowski_resize(gray1_wo_inv, shape_of_diff, minkowski_mean_order)
+        gray2_mink_wo = minkowski_resize(gray2_wo_inv, shape_of_diff, minkowski_mean_order)
+
+        diff_wo = cv2.absdiff(gray1_mink_wo, gray2_mink_wo)
+        diff_cut_wo = (diff_wo>diff_threshold) * diff_wo
+        answer_wo = np.all(diff_cut_wo<=diff_threshold)
+        print("Les 2 feuilles de papier sans transformation sont identiques :", answer_wo)
+
+        # Pour le debug
+        transfo = False
+        save_comparison(old_img, new_img, overlay_wo, gray1_wo, gray2_wo, gray1_mink_wo, gray2_mink_wo, diff_cut_wo, answer_wo, transfo)
+        if answer_wo:
+            return True
 
         # ---- ALIGNEMENT ----
 
@@ -151,7 +185,8 @@ def isSimilar(old_img_path:Path, new_img_path:Path) -> bool:
         overlay = np.zeros_like(old_img)
         cv2.addWeighted(old_img, 0.5, img2_reg, 0.5, 0, overlay)
 
-        # ---- DIFFERENCES ----
+
+        # ---- DIFFERENCES SUITE A TRANSFOS ----
 
         color1 = old_img.copy()
         color2 = img2_reg
@@ -176,7 +211,8 @@ def isSimilar(old_img_path:Path, new_img_path:Path) -> bool:
         print("Les 2 feuilles de papier sont identiques :", answer)
 
         # Pour le debug
-        save_comparison(matches_drawn, img2_reg, overlay, gray1, gray2, gray1_mink, gray2_mink, diff_cut, answer)
+        transfo = True
+        save_comparison(matches_drawn, img2_reg, overlay, gray1, gray2, gray1_mink, gray2_mink, diff_cut, answer, transfo)
 
         return answer.item()
     except Exception as e:
