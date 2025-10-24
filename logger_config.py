@@ -1,18 +1,19 @@
 import logging
+from logging.handlers import TimedRotatingFileHandler
 import os, sys
 REPO_PATH = os.path.abspath(os.path.dirname(__file__))
 if REPO_PATH not in sys.path:
     sys.path.insert(0, REPO_PATH)
 from pathlib import Path
 
-def setup_logger(name: str, log_file: str = "detection_notes.log", level=logging.DEBUG):
+def setup_logger(name: str, log_file: str = "logs/detection_notes.log", level=logging.DEBUG):
     """Crée et retourne un logger configuré"""
     logger = logging.getLogger(name)
     logger.setLevel(level)
     
     if not logger.handlers:
         # File handler
-        fh = logging.FileHandler(log_file)
+        fh = TimedRotatingFileHandler(log_file, when="midnight", interval=1, backupCount=7)
         fh.setLevel(level)
         # Console handler
         ch = logging.StreamHandler()

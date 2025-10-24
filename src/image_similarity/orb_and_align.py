@@ -10,8 +10,7 @@ from src.image_similarity.resize_minkowski_interpolation import minkowski_resize
 from datetime import datetime
 from logger_config import setup_logger, save_fig_with_limit
 from pathlib import Path
-
-# BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+from logger_config import setup_logger
 
 # Affichage des graphes lors de l'exécution du script ?
 print_graphs = False
@@ -108,6 +107,7 @@ def save_comparison(matches_drawn, img2_aligned, overlay, gray1, gray2, gray1_mi
 
 
 def isSimilar(old_img_path:Path, new_img_path:Path) -> bool:
+    logger = setup_logger("isSimilar")
     try:
         old_img = cv2.imread(old_img_path)
         new_img = cv2.imread(new_img_path)
@@ -137,7 +137,7 @@ def isSimilar(old_img_path:Path, new_img_path:Path) -> bool:
         diff_wo = cv2.absdiff(gray1_mink_wo, gray2_mink_wo)
         diff_cut_wo = (diff_wo>diff_threshold) * diff_wo
         answer_wo = np.all(diff_cut_wo<=diff_threshold)
-        print("Les 2 feuilles de papier sans transformation sont identiques :", answer_wo)
+        logger.debug("Les 2 feuilles de papier sans transformation sont identiques :" + str(answer_wo))
 
         # Pour le debug
         transfo = False
