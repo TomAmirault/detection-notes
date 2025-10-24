@@ -1,3 +1,5 @@
+# 
+
 import json
 import sys
 from difflib import SequenceMatcher
@@ -10,7 +12,7 @@ if REPO_PATH not in sys.path:
     sys.path.insert(0, REPO_PATH)
 
 from src.processing.mistral_ocr_llm import image_transcription
-#from src.processing.teklia_ocr_llm import image_transcription
+# from src.processing.teklia_ocr_llm import image_transcription
 
 from src.backend.db import (
     DB_PATH,
