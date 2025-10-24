@@ -1,4 +1,4 @@
-from spacy_model import extraire_entites
+from ner.archives.spacy_model import extraire_entites
 from rapidfuzz import fuzz
 
 

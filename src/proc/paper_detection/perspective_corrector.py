@@ -1,10 +1,12 @@
+# Utilities for perspective correction of a sheet in an image
+
 import cv2
 import numpy as np
 
 
-def order_corners(corners):
+def order_corners(corners: np.ndarray) -> np.ndarray:
     """
-    Trie les 4 coins dans l'ordre : haut-gauche, haut-droit, bas-droit, bas-gauche
+    Sorts the 4 corners in the order: top-left, top-right, bottom-right, bottom-left
     """
     rect = np.zeros((4, 2), dtype=np.float32)
 
@@ -19,13 +21,16 @@ def order_corners(corners):
     return rect
 
 
-def get_output_size(corners):
-    # distances horizontales
+def get_output_size(corners: np.ndarray) -> tuple[int, int]:
+    """
+    Compute the output size (width, height) of a quadrilateral based on its corner coordinates
+    """
+    # Horizontal distances
     width_top = np.linalg.norm(corners[0] - corners[1])
     width_bottom = np.linalg.norm(corners[2] - corners[3])
     max_width = int(max(width_top, width_bottom))
 
-    # distances verticales
+    # Vertical distances
     height_left = np.linalg.norm(corners[0] - corners[3])
     height_right = np.linalg.norm(corners[1] - corners[2])
     max_height = int(max(height_left, height_right))
@@ -33,21 +38,20 @@ def get_output_size(corners):
     return max_width, max_height
 
 
-def corrected_perspective(img, corners):
-    '''
-    Applique une correction de perspective pour redresser la feuille
-    '''
-    # Rectangle parfait de destination
+def corrected_perspective(img: np.ndarray, corners: np.ndarray) -> np.ndarray:
+    """
+    Applies a perspective correction to straighten the sheet
+    """
+    # Perfect destination rectangle
     corners = order_corners(corners)
     output_width, output_height = get_output_size(corners)
-    dst_points = np.array([[0, 0], [output_width - 1, 0],
-                          [output_width - 1, output_height - 1], [0, output_height - 1]], dtype=np.float32)
+    dst_points = np.array([[0, 0], [output_width - 1, 0], [output_width - 1, output_height - 1], [0, output_height - 1]], dtype=np.float32)
 
-    # Calculer la matrice de transformation de perspective
+    # Compute the perspective transformation matrix
     matrix = cv2.getPerspectiveTransform(corners, dst_points)
 
-    # Appliquer la transformation
-    corrected = cv2.warpPerspective(
-        img, matrix, (output_width, output_height), flags=cv2.INTER_LANCZOS4)
+    # Apply the transformation
+    corrected = cv2.warpPerspective(img, matrix, (output_width, output_height), flags=cv2.INTER_LANCZOS4)
 
     return corrected
+

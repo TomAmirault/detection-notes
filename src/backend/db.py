@@ -441,7 +441,7 @@ def find_existing_event_id(entities_new: Dict, db_path: str = DB_PATH) -> Option
             "ABBREVIATION_UNKNOWN": json.loads(row["entite_ABBREVIATION_UNKNOWN"] or "[]")
         }
 
-        if same_event(entities_new, entities_existing)[0]:
+        if same_event(entities_new, entities_existing):
             con.close()
             return row["evenement_id"]
 

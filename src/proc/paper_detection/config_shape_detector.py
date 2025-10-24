@@ -1,14 +1,22 @@
+# Configuration of parameters used for leaf detection via contour detection
+# Returns the parameters to be updated in shape_detector.py after configuration
+
+import sys, os
+REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
+if REPO_PATH not in sys.path:
+    sys.path.insert(0, REPO_PATH)
 import cv2
 import numpy as np
 import time
-from shape_detector import shape_detector
+from src.proc.paper_detection.shape_detector import shape_detector
 
-def tune_shape_detector_camera():
+
+def tune_shape_detector_camera() -> dict[str, float]:
     """
-    Tuner interactif pour shape_detector
+    Interactive tuner for shape_detector
     """
 
-    # Valeurs par défaut
+    # Default values (sufficient for most cases)
     BILATERAL_D = 5
     BILATERAL_SIGMA_COLOR = 20
     BILATERAL_SIGMA_SPACE = 20
@@ -45,7 +53,7 @@ def tune_shape_detector_camera():
         if not ret:
             continue
 
-        # Lecture "sécurisée" des curseurs
+        # Safe reading of the trackbar values
         bilateral_d = max(cv2.getTrackbarPos("D", "Shape Detector Tuner"), 1)
         bilateral_sigma_color = cv2.getTrackbarPos("SIG_COLOR", "Shape Detector Tuner")
         bilateral_sigma_space = cv2.getTrackbarPos("SIG_SPACE", "Shape Detector Tuner")
@@ -60,7 +68,7 @@ def tune_shape_detector_camera():
         max_saturation = cv2.getTrackbarPos("MAX_SAT", "Shape Detector Tuner") 
         min_value = cv2.getTrackbarPos("MIN_VALUE", "Shape Detector Tuner")
 
-        # Étapes intermédiaires
+        # Intermediate processing steps
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         preproc = cv2.bilateralFilter(gray, d=bilateral_d, sigmaColor=bilateral_sigma_color, sigmaSpace=bilateral_sigma_space)
         edges = cv2.Canny(preproc, canny_threshold1, canny_threshold2)
@@ -71,12 +79,12 @@ def tune_shape_detector_camera():
                                 canny_threshold1, canny_threshold2, morph_kernel_size, morph_iterations,
                                 poly_epsilon_factor, min_area_ratio, max_saturation, min_value)
 
-        # Affichage des contours sur copie
+        # Display contours on a copy of the image
         detected = frame.copy()
         for s in shapes:
             cv2.drawContours(detected, [s], -1, (0, 255, 0), 4)
 
-        # Redimensionner toutes les étapes pour un canvas 2x2
+        # Resize all steps for a 2x2 canvas
         h, w = frame.shape[:2]
         preproc_color = cv2.cvtColor(preproc, cv2.COLOR_GRAY2BGR)
         edges_color = cv2.cvtColor(edges, cv2.COLOR_GRAY2BGR)
@@ -87,12 +95,11 @@ def tune_shape_detector_camera():
         closed_resized = cv2.resize(closed_color, (w//2, h//2))
         detected_resized = cv2.resize(detected, (w//2, h//2))
 
-        # Combiner en un canvas 2x2
+        # Combine into a 2x2 canvas
         top = np.hstack((preproc_resized, edges_resized))
         bottom = np.hstack((closed_resized, detected_resized))
         canvas = np.vstack((top, bottom))
-
-        # Affichage 
+ 
         cv2.imshow("Shape Detector Tuner", canvas)
 
         if cv2.waitKey(30) == ord('q'):
@@ -102,7 +109,7 @@ def tune_shape_detector_camera():
     cap.release()
     cv2.destroyAllWindows()
 
-    # Retourner la configuration finale
+    # Return the final configuration
     final_config = {
         "BILATERAL_D": bilateral_d,
         "BILATERAL_SIGMA_COLOR": bilateral_sigma_color,
@@ -117,6 +124,7 @@ def tune_shape_detector_camera():
         "MIN_VALUE": min_value,
     }
     return final_config
+
 
 if __name__ == "__main__":
     cfg = tune_shape_detector_camera()
