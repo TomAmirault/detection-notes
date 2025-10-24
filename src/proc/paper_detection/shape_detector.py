@@ -1,99 +1,97 @@
-# Détection des contours et filtrage: seuls les quadrilatères "blancs" sont gardés
+# Detects quadrilateral shapes in an image and filters them based on size and color
+# Only white quadrilaterals likely to represent sheets of paper are kept
+
 import cv2
 import numpy as np
 
 
-# --- HYPERPARAMÈTRES ---
-# Filtrage bilatéral
-BILATERAL_D = 5             # Diamètre du voisinage pour le filtrage bilatéral
-BILATERAL_SIGMA_COLOR = 20  # Lissage sur les différences de couleur
-BILATERAL_SIGMA_SPACE = 20  # Lissage spatial (influence sur la distance entre pixels)
+# --- HYPERPARAMETERS ---
+# Bilateral filtering
+BILATERAL_D: int = 5               # Neighborhood diameter for bilateral filtering
+BILATERAL_SIGMA_COLOR: int = 20    # Filter strength for color differences
+BILATERAL_SIGMA_SPACE: int = 20    # Filter strength for spatial distance
 
-# Détection de contours (Canny)
-CANNY_THRESHOLD1 = 75       # Seuil bas pour les contours
-CANNY_THRESHOLD2 = 200      # Seuil haut pour les contours
+# Edge detection (Canny)
+CANNY_THRESHOLD1: int = 75         # Lower threshold for Canny edges
+CANNY_THRESHOLD2: int = 200        # Upper threshold for Canny edges
 
-# Morphologie (fermeture des contours)
-MORPH_KERNEL_SIZE = 7        # Taille du noyau pour fermer les trous
-MORPH_ITERATIONS = 1         # Nombre d'itérations de la fermeture
+# Morphology (closing edges)
+MORPH_KERNEL_SIZE: int = 7         # Kernel size for closing gaps
+MORPH_ITERATIONS: int = 1          # Number of closing iterations
 
-# Approximation polygonale
-POLY_EPSILON_FACTOR = 0.01  # Fraction de la longueur du périmètre pour approxPolyDP
+# Polygon approximation
+POLY_EPSILON_FACTOR: float = 0.01  # Fraction of perimeter for approxPolyDP
 
-# Filtrage des quadrilatères
-MIN_AREA_RATIO = 0.05        # Aire minimale relative à l'image pour garder le polygone
+# Quadrilateral filtering
+MIN_AREA_RATIO: float = 0.05       # Minimum area relative to image to keep polygon
 
-# Filtrage couleur (zones "blanches")
-MAX_SATURATION = 100         # Saturation maximale pour considérer la zone blanche
-MIN_VALUE = 175              # Luminosité minimale pour considérer la zone blanche
+# Color filtering (white areas)
+MAX_SATURATION: int = 100          # Maximum saturation to consider a region white
+MIN_VALUE: int = 175               # Minimum brightness to consider a region white
 
 
 
-def preprocessed_image(img: np.ndarray, bilateral_d=BILATERAL_D, 
-                       bilateral_sigma_color=BILATERAL_SIGMA_COLOR, bilateral_sigma_space=BILATERAL_SIGMA_SPACE) -> np.ndarray:
+def preprocessed_image(img: np.ndarray, bilateral_d: int = BILATERAL_D, bilateral_sigma_color: int = BILATERAL_SIGMA_COLOR, bilateral_sigma_space:int = BILATERAL_SIGMA_SPACE) -> np.ndarray:
     """
-    L'image est convertie en niveaux de gris, puis un filtrage bilatéral est appliqué
-    pour réduire le bruit tout en préservant les contours.
+    Convert the image to grayscale and apply a bilateral filter
+    to reduce noise while preserving edges.
     """
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     denoised = cv2.bilateralFilter(gray, bilateral_d, bilateral_sigma_color, bilateral_sigma_space)
     return denoised
 
 
-def shape_detector(img: np.ndarray, bilateral_d=BILATERAL_D, 
-                       bilateral_sigma_color=BILATERAL_SIGMA_COLOR, bilateral_sigma_space=BILATERAL_SIGMA_SPACE, 
-                       canny_threshold1=CANNY_THRESHOLD1, canny_threshold2=CANNY_THRESHOLD2, 
-                       morph_kernel_size=MORPH_KERNEL_SIZE, morph_iterations=MORPH_ITERATIONS, 
-                       poly_epsilon_factor=POLY_EPSILON_FACTOR, min_area_ratio=MIN_AREA_RATIO, 
-                       max_saturation=MAX_SATURATION, min_value=MIN_VALUE) -> list:
+def shape_detector(img: np.ndarray, bilateral_d: int = BILATERAL_D, bilateral_sigma_color: int = BILATERAL_SIGMA_COLOR,
+                bilateral_sigma_space: int = BILATERAL_SIGMA_SPACE, canny_threshold1: int = CANNY_THRESHOLD1, canny_threshold2: int = CANNY_THRESHOLD2,
+                morph_kernel_size: int = MORPH_KERNEL_SIZE, morph_iterations: int = MORPH_ITERATIONS, poly_epsilon_factor: float = POLY_EPSILON_FACTOR,
+                min_area_ratio: float = MIN_AREA_RATIO, max_saturation: int = MAX_SATURATION, min_value: int = MIN_VALUE) -> list[np.ndarray]:
+    """
+    Detect quadrilateral shapes in the image that likely correspond to sheets of paper
+    
+    Steps:
+    - Preprocess image (grayscale + bilateral filter)
+    - Detect edges using Canny and close gaps with morphology
+    - Approximate contours to polygons
+    - Filter quadrilaterals by area, convexity, and color (white)
+    """
     proc = preprocessed_image(img, bilateral_d, bilateral_sigma_color, bilateral_sigma_space)
     h, w = img.shape[:2]
 
-    # Binarisation pour trouver les contours
+    # Binarize to find edges
     edges = cv2.Canny(proc, canny_threshold1, canny_threshold2)
 
-    # Fermer les trous dans les contours
+    # Close gaps in edges
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (morph_kernel_size, morph_kernel_size))
     edges = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel, iterations=morph_iterations)
 
-    # Extraction des contours
+    # Find contours
     contours, _ = cv2.findContours(
         edges, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 
     valid_shapes = []
 
-    # Conversion en HSV
+    # Convert image to HSV
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
     for cnt in contours:
-        # Enveloppe convexe
+        # Convex hull
         hull = cv2.convexHull(cnt)
 
-        # Approximation polygoniale
+        # Polygon approximation
         perimeter = cv2.arcLength(hull, True)
         approx = cv2.approxPolyDP(hull, poly_epsilon_factor * perimeter, True)
 
-        # On ne garde que les polygones pouvant être des feuilles
+        # Keep only polygons likely to be sheets of paper
         if len(approx) == 4 and cv2.contourArea(cnt) > min_area_ratio * h * w and cv2.isContourConvex(approx):
-            # Masque du quadrilatère
+            # Create mask for quadrilateral
             mask = np.zeros((h, w), dtype=np.uint8)
             cv2.drawContours(mask, [approx], -1, 255, -1)
 
-            # Moyenne des canaux HSV dans la zone
+            # Compute mean HSV values within quadrilateral
             mean_h, mean_s, mean_v = cv2.mean(hsv, mask=mask)[:3]
 
-            # Condition : zone claire et peu saturée (donc blanche)
+            # Condition: bright and low saturation (white)
             if mean_s < max_saturation and mean_v > min_value:
                 valid_shapes.append(approx)
 
     return valid_shapes
-
-def get_mask(img):
-    h, w = img.shape[:2]
-    mask = np.zeros((h, w), dtype=np.uint8)
-
-    possible_papers = shape_detector(img)
-    if len(possible_papers) > 0:
-        cv2.drawContours(mask, possible_papers, -1, 255, thickness=cv2.FILLED)
-
-    return mask

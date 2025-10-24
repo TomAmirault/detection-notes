@@ -1,19 +1,26 @@
+# Extracts, via a call to the Mistral model API, the entities belonging to the different categories
+
+import sys, os
+REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
+if REPO_PATH not in sys.path:
+    sys.path.insert(0, REPO_PATH)
 import json
 import re
 import os
-from typing import Dict, List
 from mistralai import Mistral
 from dotenv import load_dotenv
+from src.ner.ner_prompt_template import NER_PROMPT
 
-# Charger clé API
+
+# Load the API key
 load_dotenv()
 api_key = os.getenv("MISTRAL_API_KEY")
 client = Mistral(api_key=api_key)
 
-MISTRAL_MODEL = "mistral-small-latest"
+# Select the model
+MISTRAL_MODEL_NER = "mistral-small-latest"
 
-
-# Dictionnaire des abréviations
+# Dictionary of abbreviations
 ABBREVIATIONS_DICT = {
     "RACR": "Retour à la conduite des réseaux",
     "RDCR": "Retrait de la conduite des réseaux",
@@ -44,35 +51,19 @@ ABBREVIATIONS_DICT = {
 }
 
 
-# Traduction des abréviations avant le LLM
+# Translate abbreviations before passing to the LLM
 
-
-def detect_abbreviations(text):
+def translate_abbreviations(text: str, abbr_dict: dict[str, str] = ABBREVIATIONS_DICT) -> str:
     """
-    Détecte toutes les suites de lettres majuscules (abréviations potentielles).
-    Retourne une liste de tuples (abréviation, position_début, position_fin).
+    Translates all uppercase abbreviations found in the text.
+    Returns the translated text.
     """
-    # Pattern : au moins 2 lettres majuscules consécutives (et tiret possible)
-    pattern = r'\b[A-ZÀÂÄÇÉÈÊËÏÎÔÙÛÜŸ]+(?:-[A-ZÀÂÄÇÉÈÊËÏÎÔÙÛÜŸ]+)*\b'
-
-    found_abbreviations = []
-    for match in re.finditer(pattern, text):
-        found_abbreviations.append(
-            (match.group(0), match.start(), match.end()))
-    return found_abbreviations
-
-
-def translate_abbreviations(text, abbr_dict=ABBREVIATIONS_DICT):
-    """
-    Traduit toutes les abréviations MAJUSCULES trouvées dans le texte.
-    Retourne le texte traduit.
-    """
-    # Pattern robuste pour abréviations majuscules avec tirets ou slash
+    # Robust pattern for uppercase abbreviations with hyphens or slashes
     pattern = r'\b[A-ZÀÂÄÇÉÈÊËÏÎÔÙÛÜŸ]+(?:[-/][A-ZÀÂÄÇÉÈÊËÏÎÔÙÛÜŸ]+)*\b'
 
     matches = list(re.finditer(pattern, text))
 
-    # Tri décroissant pour éviter les problèmes de déplacement d'index
+    # Robust pattern for uppercase abbreviations with hyphens or slashes
     matches = sorted(matches, key=lambda m: m.start(), reverse=True)
 
     translated_text = text
@@ -90,16 +81,19 @@ def translate_abbreviations(text, abbr_dict=ABBREVIATIONS_DICT):
     return translated_text
 
 
-# Extraction des entités
-def format_abbreviations_for_prompt(abbrev_dict: Dict[str, str]) -> str:
-    """Transforme le dictionnaire en liste lisible pour le prompt."""
-    return "\n".join([f"- {k} → {v}" for k, v in abbrev_dict.items()])
+# Entity extraction
+
+def format_abbreviations_for_prompt(abbrev_dict: dict[str, str]) -> str:
+    """
+    Converts the dictionary into a readable list for the prompt.
+    """
+    return "\n".join([f"- {k} --> {v}" for k, v in abbrev_dict.items()])
 
 
-def extract_entities(text: str) -> Dict[str, List[str]]:
-    """ 
-    Extrait les entités d'un texte en français en utilisant l'API Mistral. 
-    Retourne un dict {label: [valeurs]}.
+def extract_entities(text: str) -> dict[str, list[str]]:
+    """
+    Extracts entities from a French text using the Mistral API.
+    Returns a dict {label: [values]}.
     """
     labels = [
         "GEO", "ACTOR", "DATETIME", "EVENT",
@@ -114,101 +108,17 @@ def extract_entities(text: str) -> Dict[str, List[str]]:
     translated_text = translate_abbreviations(text)
     abbrev_str = format_abbreviations_for_prompt(ABBREVIATIONS_DICT)
 
-    prompt = f"""
-    Tu es un extracteur d'entités strict en français.
+    prompt = NER_PROMPT.format(translated_text=translated_text, abbrev_str=abbrev_str)
 
-    **Règles absolues** :
-    - Tu ne dois **jamais inventer d'entités**.
-    - N'extrais que des sous-chaînes **exactement présentes** dans le texte ci-dessous.
-    - Les entités doivent être **formées de mots consécutifs** dans le texte d'origine, dans le même ordre.
-    - N'ajoute aucune interprétation, reformulation ou élément typique du domaine s'il n'est pas écrit noir sur blanc.
-    
-    Les abréviations suivantes ont été traduites dans le texte en leur forme développée complète.  
-    Elles doivent être considérées comme des **blocs indivisibles** : si une de ces expressions apparaît dans le texte, tu dois **toujours extraire l'expression entière**, jamais une sous-partie.
-
-    {abbrev_str}
-    
-    Typiquement, les centres opérationnels sont des ACTOR (COSE suivis juste après d'une ville est un ACTOR entier). 
-    
-    Règle supplémentaire :
-    - Si une **suite d’au moins 3 lettres majuscules consécutives** (ex. `NIPCCO`, `ACR`) apparaît dans le texte et **ne correspond à aucune autre catégorie identifiable** (ni ACTOR, ni INFRASTRUCTURE, ni autre), alors **et seulement dans ce cas**, tu dois l’extraire dans la catégorie **`ABBREVIATION_UNKNOWN`**.
-    - Autrement dit, **`ABBREVIATION_UNKNOWN`** est une **catégorie de dernier recours**, utilisée uniquement pour les abréviations qui **n’ont aucun sens clair ou identifiable** dans le contexte.
-    - Si une abréviation peut correspondre à une autre catégorie (ex. `SNCF`, 'EDF' ou `RTE` = ACTOR), **tu dois toujours la classer dans la catégorie la plus pertinente**, et **jamais dans `ABBREVIATION_UNKNOWN`**.
-
-    Texte :
-    \"\"\"{translated_text}\"\"\"
-
-    Catégories :
-   - GEO :
-    Noms de lieux, villes, régions ou axes géographiques.
-    Inclure les lieux composés ou reliés par des tirets, par exemple :
-        "Ivry-sur-Seine", "Trappes-Deauville", "Paris-Lyon"
-    Règle spéciale pour les tirets : lorsqu’un nom contient plusieurs villes reliées
-    par un tiret (ex. "Ivry-sur-Seine-Saint-Etienne"), considère chaque ville séparément
-    comme une entité GEO distincte.
-        Exemple :
-            "Ivry-sur-Seine-Saint-Etienne" → deux entités GEO :
-                1. "Ivry-sur-Seine"
-                2. "Saint-Etienne"
-    - ACTOR :
-        Noms d'acteurs (personnes, équipes, entités organisationnelles).
-    - DATETIME :
-        Dates ou horaires, y compris formats naturels (ex. "10h30", "20 octobre 2025").
-    - EVENT :
-        Événements spécifiques, par exemple incidents, manœuvres, interventions.
-    - INFRASTRUCTURE :
-        Noms ou identifiants d'ouvrages électriques, lignes, postes.
-    - OPERATING_CONTEXT :
-        Contexte opérationnel, incluant ordres, statuts ou conditions particulières.
-    - PHONE_NUMBER :
-        Numéros de téléphone.
-    - ELECTRICAL_VALUE :
-        Valeurs électriques, comme "225kV", "63 kV", "400 MW", etc.
-    - ABBREVIATION_UNKNOWN :  
-        Abréviations en lettres majuscules (au moins 3 caractères) **qui ne correspondent à aucune autre catégorie identifiable** et dont le sens **n’est pas interprétable dans le contexte**.  
-        Exemple : `NIPCCO`, `ACR` (si leur signification n’est pas reconnue).
-
-
-    Règles :
-    - Ne produis que du JSON strict valide.
-    - Chaque valeur doit être une sous-chaîne copiée exactement telle qu'elle apparaît dans le texte.
-    - Si aucune entité n'est trouvée pour une catégorie, mets une liste vide.
-    - N'inclus aucune explication, aucun commentaire, aucun texte hors du JSON.
-
-    Format attendu :
-    {{
-    "GEO": [],
-    "ACTOR": [],
-    "DATETIME": [],
-    "EVENT": [],
-    "INFRASTRUCTURE": [],
-    "OPERATING_CONTEXT": [],
-    "PHONE_NUMBER": [],
-    "ELECTRICAL_VALUE": [],
-    "ABBREVIATION_UNKNOWN": []
-    }}
-    
-    Quelques exemples de mots par catégories : 
-    {{ "GEO": ["Caen", "Chartres", "Paris"], 
-    "ACTOR": ["SNCF, Enedis", "Chargé d'exploitation"], 
-    "DATETIME": ["15 juillet 2023", "ce matin", "demain", "14h", "18:00", "12/03/2020"], 
-    "EVENT": ["Manoeuvre", "Incident", "Retrait", "Bascule"], 
-    "INFRASTRUCTURE": ["Ligne", "N-1", "Transformateur"], 
-    "OPERATING_CONTEXT": ["invalide en HO", "Régime surveillance dispatching"], 
-    "PHONE_NUMBER": ["06 12 34 56 78", "+33 9 38 39 29 30"], 
-    "ELECTRICAL_VALUE": ["225kV", "38 kV", "400 GW"],
-    "ABBREVIATION_UNKNOWN": ["NIPCCO", "ACR"]}} 
-    """
-
-    # Appel API Mistral
+    # Mistral API call
     response = client.chat.complete(
-        model=MISTRAL_MODEL,
+        model=MISTRAL_MODEL_NER,
         messages=[{"role": "user", "content": prompt}]
     )
 
     output = response.choices[0].message.content
 
-    # Extraction robuste du JSON généré
+    # Robust extraction of the generated JSON
     start, end = output.find("{"), output.rfind("}") + 1
     json_str = output[start:end] if start != -1 and end != -1 else "{}"
 
@@ -217,7 +127,7 @@ def extract_entities(text: str) -> Dict[str, List[str]]:
     except json.JSONDecodeError:
         data = {}
 
-    # Normalisation des données
+    # Data normalization
     normalized = {}
     for label in labels:
         val = data.get(label, [])
@@ -229,8 +139,3 @@ def extract_entities(text: str) -> Dict[str, List[str]]:
             normalized[label] = []
 
     return normalized
-
-
-# Test
-if __name__ == "__main__":
-    print(extract_entities("Penser au format JSON et a faire le TCR."))

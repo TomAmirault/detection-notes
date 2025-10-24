@@ -1,12 +1,9 @@
+# Handles the detection and saving of paper-like quadrilaterals
+
 import sys, os
-
-# Dossier dans lequel est situé le présent fichier
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-sys.path.append(os.path.abspath(os.path.join(BASE_DIR, "../../..")))
-# maintenant Python "voit" le dossier src comme un package
-
-
+REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
+if REPO_PATH not in sys.path:
+    sys.path.insert(0, REPO_PATH)
 from src.proc.paper_detection.perspective_corrector import corrected_perspective
 from src.processing.add_data2db import add_data2db
 import cv2
@@ -15,47 +12,47 @@ import numpy as np
 from datetime import datetime
 
 
+# Folder where the current file is located
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.abspath(os.path.join(BASE_DIR, "../../..")))
 
-# Réglages de sauvegarde
+# Output settings
 OUT_DIR = os.path.join(BASE_DIR, "../../../tmp/paper")
 os.makedirs(OUT_DIR, exist_ok=True)
 
-# Cooldown
-COOLDOWN_SEC = 20.0   # délai mini entre deux sauvegardes (évite les doublons)
-
+# Minimum cooldown between two saves
+COOLDOWN_SEC = 20.0  
 last_save_time = 0.0
 
 
-def save_detection(frame, quads):
+def save_detection(img: np.ndarray, quads: list[np.ndarray]) -> None:
     """
-    Sauvegarde le frame complet et celle dont la perspective a été modifiée
-    - quads: liste de contours (4 points) renvoyés par la détection (approxPolyDP)
+    Save detected quadrilaterals from an image with perspective correction.
+    - quads: List of contours (4 points each) returned by detection (approxPolyDP).
     """
     global last_save_time
 
     if not quads:
         return
 
-    # Cooldown
+    # Cooldown check
     now = time.time()
     if now - last_save_time < COOLDOWN_SEC:
         return
 
-    # Horodatage unique
+    # Unique timestamp
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")[:-3]
     prefix = f"detection_{stamp}"
 
-    # Sauvegarde de chaque quadrilatère
+    # Save each quadrilateral
     for i, quad in enumerate(quads):
         corners = quad.reshape(4, 2).astype(np.float32)
-        corrected = corrected_perspective(frame, corners)
-
-        corrected_path = os.path.join(
-            OUT_DIR, f"{prefix}_q{i}.jpg"
-        )
+        corrected = corrected_perspective(img, corners)
+        
+        corrected_path = os.path.join(OUT_DIR, f"{prefix}_q{i}.jpg")
         cv2.imwrite(corrected_path, corrected)
 
-        # Ajout en base
+        # Add to database
         add_data2db(corrected_path)
 
     last_save_time = now

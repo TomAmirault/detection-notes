@@ -385,26 +385,20 @@ def is_htr_buggy(ocr_text: str, cleaned_text: str = "") -> tuple[bool, str]:
     return False, ""
 
 
-def clean_added_text_for_ner(text: str) -> str:
+def clean_added_text(text: str) -> str:
+    """
+    Clean a block of diff-like text by removing prefixes and deleted lines
+    """
     cleaned_lines = []
     for line in text.splitlines():
         line = line.strip()
 
-        # Ignore complètement les lignes supprimées
+        # Ignores deleted lines (starting with "- Ancienne ligne X.")
         if re.match(r"^\-\s*Ancienne\s+ligne\s+\d+\.", line, flags=re.IGNORECASE):
             continue
 
-        # Supprime les préfixes des lignes ajoutées / modifiées / supprimées
-        # Exemples de préfixes attendus: "+ Ligne 3. ", "- Ancienne ligne 2. ", "~ Ligne 5. "
-        # Nous voulons:
-        #  - ignorer complètement les lignes supprimées (déjà géré plus haut),
-        #  - enlever les préfixes + / ~ et retourner le reste nettoyé.
-        new_line = re.sub(
-            r"^[+~]\s*Ligne\s+\d+\.\s*",
-            "",
-            line,
-            flags=re.IGNORECASE
-        ).strip()
+        # Remove prefixes from added or modified lines ("+ Ligne X.", "~ Ligne X.")
+        new_line = re.sub(r"^[+~]\s*Ligne\s+\d+\.\s*", "", line, flags=re.IGNORECASE).strip()
 
         if new_line:
             cleaned_lines.append(new_line)

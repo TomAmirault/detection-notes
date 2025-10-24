@@ -1,5 +1,4 @@
 import json
-import uuid
 import sys
 from difflib import SequenceMatcher
 
@@ -26,7 +25,7 @@ from src.utils.text_utils import (
     has_meaningful_text,
     compute_diff,
     is_htr_buggy,
-    clean_added_text_for_ner,
+    clean_added_text,
     score_and_categorize_texts,
     reflow_sentences,
 )
@@ -160,7 +159,7 @@ def add_data2db(image_path: str, db_path: str = DB_PATH):
 
     # Extraction d'entités
     if diff_human.strip():
-        cleaned_diff_human = clean_added_text_for_ner(diff_human)
+        cleaned_diff_human = clean_added_text(diff_human)
         entities = extract_entities(cleaned_diff_human)
     else:
         entities = {}
@@ -229,7 +228,7 @@ def add_audio2db(audio_path: str, transcription_brute: str, transcription_clean:
     diff_json = [{"type": "insert", "line": 1, "content": transcription_clean.strip()}]
 
     # Extract entities from cleaned transcription
-    cleaned_for_ner = clean_added_text_for_ner(diff_human)
+    cleaned_for_ner = clean_added_text(diff_human)
     entities = extract_entities(cleaned_for_ner) if cleaned_for_ner else {}
 
     global AUD_COUNTER
