@@ -30,7 +30,6 @@ from src.utils.text_utils import (
     reflow_sentences,
 )
 from src.utils.image_utils import encode_image
-from src.image_similarity.orb_and_align import isSimilar
 
 AUD_COUNTER = 0
 TEXT_COUNTER = 0

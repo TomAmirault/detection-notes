@@ -15,7 +15,7 @@ if REPO_PATH not in sys.path:
 
 from src.ner.compare_entities import same_event
 from src.utils.text_utils import compute_diff
-from src.image_similarity.orb_and_align import isSimilar
+from image_similarity.image_comparison import isSimilar
 
 DB_PATH = os.environ.get("RTE_DB_PATH", os.path.join(REPO_PATH,"data/db/notes.sqlite"))
 

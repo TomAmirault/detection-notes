@@ -1,8 +1,8 @@
-# Ce fichier, une fois exécuté, capte en continu le flux de la webcam de l'ordinateur, et, dès que le
-# modèle YOLO détecte une feuille de papier, il enregistre les 20 frames suivantes, pour sélectionner
-# la frame la moins floue et l'enregistrer, ainsi que sa version rognée autour de la bounding box.
-
-# Ajoute la racine du projet au sys.path pour permettre les imports internes
+"""This module continuously captures the computer's webcam stream and, when a sheet
+of paper is detected, it records a short sequence of 20 frames to select the least
+blurry one, then saves that frame along with a cropped image around the detected
+bounding box.
+"""
 import sys, os
 REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
 if REPO_PATH not in sys.path:
@@ -13,10 +13,8 @@ import time
 from datetime import datetime
 from ultralytics import YOLO
 import os, sys
-from blurry_detection import less_blurred, less_blurred_roi
-# from segmentation import crop_image_around_object
+from blurry_detection import less_blurred_roi
 from segmentation_threshold import crop_image_around_object, get_binary_image_of_text
-
 from src.processing.add_data2db import add_data2db
 
 

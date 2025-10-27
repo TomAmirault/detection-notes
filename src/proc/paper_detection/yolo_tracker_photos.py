@@ -1,6 +1,9 @@
-# Ce fichier, une fois exécuté, capte en continu le flux de la webcam de l'ordinateur, et, dès que le
-# modèle YOLO détecte une feuille de papier, il enregistre les 20 frames suivantes, pour sélectionner
-# la frame la moins floue et l'enregistrer, ainsi que sa version rognée autour de la bounding box.
+'''This script reads, at the speed of 1 fps, the webcam stream and run a finetyuned YOLOv11 model
+to detect sheets of paper. When a sheet is detected, the frame is cropped (using crop_image_around_object)
+and saved in a buffer. Once 5 images are in the buffer, it keeps the less blurred (according to
+the laplacian_variance function defined in the blury_detection) and send it to the rest of the
+pipeline (add_data2db function).
+'''
 import sys, os
 REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
 if REPO_PATH not in sys.path:
@@ -9,53 +12,50 @@ if REPO_PATH not in sys.path:
 import cv2
 import time
 from datetime import datetime
+from logger_config import setup_logger
 from ultralytics import YOLO
-from blurry_detection import less_blurred, less_blurred_roi
-# from segmentation import crop_image_around_object
 from segmentation_threshold import crop_image_around_object, get_binary_image_of_text
 from blurry_detection import laplacian_variance
-
 from src.processing.add_data2db import add_data2db
 from logger_config import save_fig_with_limit
 import matplotlib.pyplot as plt
 import numpy as np
-# BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# --- Paramètres ---
-frame_width = 1552      # pour Webcam Mac
-frame_height = 1552     # pour Webcam Mac
-detection_conf = 0.8    # Seuil de confiance pour le modèle YOLO
+logger = setup_logger("yolo_tracker_photos")
+
+# --- Parameters ---
+frame_width = 1552      # for Mac Webcam
+frame_height = 1552     # for Mac Webcam
+detection_conf = 0.8    # Confidence threshold for YOLO model
 s_max = 100
 v_min = 210
 
 
-# Modèle YOLOv11 finetuné sur le dataset https://universe.roboflow.com/dty-opi9m/detection-de-feuilles-245oo
+# YOLOv11 detection model finetuned on the following dataset https://universe.roboflow.com/dty-opi9m/detection-de-feuilles-245oo
 model_path = os.path.join(REPO_PATH, 'src/proc/detection_model/best-detect.pt')
 model = YOLO(model_path)
 
-# # Timer
-# start = time.time()
-# checkpoint = start
 
-
-# Initialisation du buffer d'images (indice 0 bloqué pour les informations sur les buffers en cours)
+# The buffers (in case of multiple sheets detected on the same frame) are initialized here
+# Each buffer is a list of dictionaries with keys 'image' and 'blur_value' stocked in buffers,
+# starting from index 1.
 buffers = [{'max_buffer_len': 0, "buffer_num": 0}]
 
-# Lancement de la webcam
 try :
     cap = cv2.VideoCapture(0)
-    print("Lancement de la caméra. Pour arrêter, taper 'q'.")
-    print("\n A l'ouverture de la caméra : cam_height, cam_width =", cap.get(cv2.CAP_PROP_FRAME_HEIGHT), "pixels, ", cap.get(cv2.CAP_PROP_FRAME_WIDTH), "pixels.")
+    logger.info("Launching the camera.")
+    logger.debug("At camera opening: cam_height, cam_width =" + str(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) + " pixels, " + str(cap.get(cv2.CAP_PROP_FRAME_WIDTH)) + " pixels.")
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, frame_width)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_height)
-    print("Après modification : cam_height, cam_width =", cap.get(cv2.CAP_PROP_FRAME_HEIGHT), "pixels, ", cap.get(cv2.CAP_PROP_FRAME_WIDTH), "pixels.")
+    logger.debug("After modification: cam_height, cam_width =" + str(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) + " pixels, " + str(cap.get(cv2.CAP_PROP_FRAME_WIDTH)) + " pixels.")
     while True:
         ret, frame = cap.read()
         if ret:
             result = model.predict(source=frame, conf=detection_conf, verbose=False)[0]
             boxes = result.boxes
-            if boxes and len(boxes)>0:      # Si un objet (une feuille de papier) est détectée sur la frame
-                
+
+            # If a sheet of paper is detected
+            if boxes and len(boxes)>0:
                 for i in range(len(boxes.xywh)):
                     (x, y, w, h) = boxes.xywh[i]
                     box_x_left = int(x-0.5*w)
@@ -67,7 +67,7 @@ try :
                     hsv = cv2.cvtColor(cropped, cv2.COLOR_BGR2HSV)
                     mean_h, mean_s, mean_v = cv2.mean(hsv)[:3]
 
-                    # Condition : zone claire et peu saturée (donc blanche)
+                    # We keep the image only if it is mostly white
                     if mean_s < s_max and mean_v > v_min: 
                         blur_value = laplacian_variance(cropped)
                         if i+1<=buffers[0]['buffer_num']:
@@ -82,12 +82,12 @@ try :
                         fig, ax = plt.subplots()
                         ax.imshow(cropped)
                         stamp = f"{datetime.now():%Y%m%d-%H%M%S}-{datetime.now().microsecond//1000:03d}"
-                        file_name =f"logs/color-criteria/image_not_conservated_{stamp}.jpg"
+                        file_name =f"logs/color-criteria/image_not_conserved_{stamp}.jpg"
                         save_fig_with_limit(file_name, fig)
-                        print("Image non conservée sur critère de couleur.")
+                        logger.debug("Image not conserved on color criteria: " + file_name)
 
                 if buffers[0]["max_buffer_len"]>=5:
-                    print("BUFFER")
+                    logger.debug("BUFFER - Buffer reached its maximum length. Saving the best image.")
                     for i in range(buffers[0]["buffer_num"]):
                         best_image = max(buffers[i+1], key=lambda x: x['blur_value'])
                         img = best_image['image']
@@ -97,9 +97,12 @@ try :
                         cv2.imwrite(filename_frame, img)
                         add_data2db(filename_frame)
                     buffers = [{'max_buffer_len': 0, "buffer_num": 0}]
+                    
+            # If no sheet of paper is detected, we reset the buffers because if it was not empty,
+            # it means that the previous images stayed in the field of vision of the camera less
+            # than 5 seconds : it was not a sheet to be scanned.
             else :
                 buffers = [{'max_buffer_len': 0, "buffer_num": 0}]
-            cv2.destroyAllWindows()
             if boxes and len(boxes)>0:
                 for i in range(len(boxes.xywh)):
                     (x, y, w, h) = boxes.xywh[i]
@@ -112,8 +115,8 @@ try :
                 break
             time.sleep(1)
 except KeyboardInterrupt :
-    print(" Arrêt demandé par l'utilisateur.")
+    logger.info("The user asked to stop the camera.")
 finally :
     if cap:
         cap.release()
-    print("Caméra arrêtée.")
+    logger.info("Camera stopped.")
