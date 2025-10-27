@@ -1,5 +1,8 @@
 from audio_cleaner import clean_audio_transcription
 from dictionary.prompts import WHISPER_PROMPT
+from dictionary.prompts import MISTRAL_CLEAN_PROMPT
+from dictionary.vocabulary import KNOWN_ABBREVIATIONS, KNOWN_CITY, KNOWN_NAMES
+
 from pathlib import Path
 from typing import Tuple, Union, Optional
 
@@ -14,7 +17,6 @@ model = whisper.load_model("large-v3-turbo")
 
 def whisper_transcribe(
     audio_path: Union[str, Path],
-    prompt: str = WHISPER_PROMPT,
     pause: bool = True
 ) -> Optional[Tuple[str, str]]:
     """
@@ -22,7 +24,6 @@ def whisper_transcribe(
 
     Args:
         audio_path (Path or str): Path to the audio file to transcribe.
-        prompt (str, optional): Initial prompt to guide transcription. Defaults to WHISPER_PROMPT.
         pause (bool, optional): If True, performs transcription and logs results. 
                                 If False, removes existing logs for the file and deletes the audio. Defaults to True.
     """
@@ -48,7 +49,11 @@ def whisper_transcribe(
     
     if pause :
 
-        result = model.transcribe(str(audio_path), prompt=prompt)
+        result = model.transcribe(str(audio_path), prompt=WHISPER_PROMPT.format(
+        KNOWN_ABBREVIATIONS=KNOWN_ABBREVIATIONS,
+        KNOWN_NAMES=KNOWN_NAMES,
+        KNOWN_CITY=KNOWN_CITY
+    ))
         
         predicted_sentence = result["text"]
 
