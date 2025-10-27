@@ -1,48 +1,49 @@
 from pathlib import Path
-from huggingface_hub import login
 from pyannote.audio import Model
 from pyannote.audio.pipelines import VoiceActivityDetection
-import torchaudio
-import sounddevice as sd
-import soundfile as sf
-import numpy as np
-import noisereduce as nr
-import torch
-import json
 from datetime import datetime, timedelta
+
+import torchaudio
+import json
 import re
-
-
-# Ajoute la racine du projet au sys.path pour permettre les imports internes
-import sys
 import os
-REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
-if REPO_PATH not in sys.path:
-    sys.path.insert(0, REPO_PATH)
-
-# python3 src/transcription/
 
 model_segm = Model.from_pretrained(
 "pyannote/segmentation-3.0")
 
 pipeline = VoiceActivityDetection(segmentation=model_segm)
 
-def VADe(audio_path, min_duration_on=3.0, min_duration_off=2.0):
+def speech_activity_splitter(
+    audio_path: Path,
+    min_duration_on: float = 3.0,
+    min_duration_off: float = 2.0
+) -> None:
+    """
+    Performs voice activity detection (VAD) on an audio file, 
+    segments the audio into speech parts, and saves each segment as a WAV file.
+    
+    Information about each segment is recorded in a JSON file.
 
-    HYPER_PARAMETERS = {
-    # Si un segment de parole détecté dure moins de 3 secondes, il sera ignoré.
+    Args:
+        audio_path (Path): Path to the audio file to process.
+        min_duration_on (float): Minimum duration of a speech segment to keep (in seconds).
+        min_duration_off (float): Minimum duration of a pause to consider it as a separation (in seconds).
+    """
+    
+    hyper_parameters = {
     "min_duration_on": min_duration_on,
-    # Si une pause est plus courte que 10 secondes, elle peut être remplie ou fusionnée avec les segments voisins.
+    
     "min_duration_off": min_duration_off
     }
-    pipeline.instantiate(HYPER_PARAMETERS)
+    
+    pipeline.instantiate(hyper_parameters)
     vad = pipeline(audio_path)
 
-    log_path = os.path.join("src/transcription/tmp", "transcriptions_log.json")
+    log_path = os.path.join("src/audio/tmp", "transcriptions_log.json")
     logs_folder = os.path.dirname(log_path)
     os.makedirs(logs_folder, exist_ok=True)
 
-    # Charger le JSON existant s'il existe
+
     if os.path.exists(log_path):
         with open(log_path, "r", encoding="utf-8") as f:
             try:
@@ -53,11 +54,9 @@ def VADe(audio_path, min_duration_on=3.0, min_duration_off=2.0):
         logs = []
         
         
-        
-    #Time
     filename_brut = audio_path.name
 
-    brut_json_path = "src/transcription/tests/audio_brut.json"
+    brut_json_path = "src/audio/tests/audio_brut.json"
     if not os.path.exists(brut_json_path):
         print(f"Fichier introuvable: {brut_json_path} — saut de VADe pour {audio_path}")
         return
@@ -95,7 +94,7 @@ def VADe(audio_path, min_duration_on=3.0, min_duration_off=2.0):
         segment = waveform[:, start:end]
         
         segment_filename = f"{os.path.splitext(os.path.basename(audio_path))[0]}_segment_{i}.wav"
-        segment_path = os.path.join("src/transcription/tmp", segment_filename)
+        segment_path = os.path.join("src/audio/tmp", segment_filename)
         
         torchaudio.save(segment_path, segment, sr)
         
@@ -115,23 +114,20 @@ def VADe(audio_path, min_duration_on=3.0, min_duration_off=2.0):
         }
         logs.append(entry)
         
-    # --- AJOUT DU TRI PAR DATE APRÈS SAUVEGARDE ---
-
 
     logs.sort(key=lambda x: datetime.strptime(x["start_time"], "%Y-%m-%d %H:%M:%S"))
 
 
     with open(log_path, "w", encoding="utf-8") as f:
         json.dump(logs, f, indent=4, ensure_ascii=False)
-    # ------------------------------------------------ #
 
-    with open("src/transcription/tests/audio_brut.json", "r") as f:
+    with open("src/audio/tests/audio_brut.json", "r") as f:
         data = json.load(f)
     
     data = [entry for entry in data if entry.get("filename") != filename_brut]
 
         
-    with open("src/transcription/tests/audio_brut.json", "w") as f:
+    with open("src/audio/tests/audio_brut.json", "w") as f:
         json.dump(data, f, indent=4)
     
     os.remove(audio_path)
@@ -139,18 +135,15 @@ def VADe(audio_path, min_duration_on=3.0, min_duration_off=2.0):
     
 if __name__ == "__main__":
     
-    folder = Path("src/transcription/tests")
-    # Lister tous les fichiers .wav
+    folder = Path("src/audio/tests")
+
     files = list(folder.glob("*.wav"))
 
-    # Trier selon le numéro de chunk extrait du nom du fichier
     files_sorted = sorted(
         files,
         key=lambda f: int(re.search(r"chunk_(\d+)_", f.name).group(1))
     )
-    print
+
     for audio_path in files_sorted: 
-        print(audio_path)
-        
-        VADe(audio_path, min_duration_on=1, min_duration_off=2)    
+        speech_activity_splitter(audio_path, min_duration_on=1, min_duration_off=2)    
 

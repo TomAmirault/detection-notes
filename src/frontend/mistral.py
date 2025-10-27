@@ -9,12 +9,13 @@ client = Mistral(api_key=api_key)
 
 def synthèse(texte: str) -> str:
     """
-    Nettoie un texte brut issu d'une transcription audio.
-    - Corrige les fautes évidentes
-    - Restaure une ponctuation minimale
-    - Ne change pas le sens ni l'ordre
-    - Ne reformule pas
+    Cleans raw text obtained from an audio transcription.
+    - Corrects obvious mistakes
+    - Restores minimal punctuation
+    - Does not change the meaning or order
+    - Does not rephrase
     """
+
     prompt = f"""Tu es un assistant spécialisé dans la synthèse de documents professionnels pour l'entreprise RTE. 
 Tu disposes de notes manuscrites et de transcriptions audio. Ces notes contiennent des informations opérationnelles, des appels à prévoir, des actions à réaliser et des incidents à signaler.
 

@@ -17,7 +17,7 @@ def main():
     raspberry_path = os.path.join(BASE_DIR, "raspberry/launch_rasp.py")
 
     # Pour l'audio
-    audio_path = os.path.join(BASE_DIR, "transcription/audio_watcher.py")
+    audio_path = os.path.join(BASE_DIR, "audio/pipeline_watcher.py")
 
     processes = []
     try:

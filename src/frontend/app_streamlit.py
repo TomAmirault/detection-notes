@@ -93,9 +93,9 @@ def safe_image(path: Optional[str]) -> Optional[str]:
 
 # --- Fonctions utilitaires ---
 
-CONFIG_PATH = "src/transcription/config.json"
+CONFIG_PATH = "src/audio/pause_status.json"
 def load_config():
-    """Charge le fichier config.json, ou le crée s'il n'existe pas."""
+    """Charge le fichier pause_status.json, ou le crée s'il n'existe pas."""
     if not os.path.exists(CONFIG_PATH):
         with open(CONFIG_PATH, "w") as f:
             json.dump({"pause": True}, f)
@@ -103,12 +103,12 @@ def load_config():
         return json.load(f)
 
 def save_config(cfg):
-    """Sauvegarde la configuration dans config.json."""
+    """Sauvegarde la configuration dans pause_status.json."""
     with open(CONFIG_PATH, "w") as f:
         json.dump(cfg, f, indent=4)
 
 def toggle_pause():
-    """Inverse la valeur de pause dans config.json."""
+    """Inverse la valeur de pause dans pause_status.json."""
     cfg = load_config()
     cfg["pause"] = not cfg["pause"]
     save_config(cfg)
@@ -289,7 +289,7 @@ for n in notes:
     img_path = safe_image(n.get("img_path_proc"))
     trans = n.get("transcription_clean")
     
-    tmp_dir = os.path.join(os.path.join(os.path.dirname(__file__), "../../src/transcription/tmp"))
+    tmp_dir = os.path.join(os.path.join(os.path.dirname(__file__), "../../src/audio/tmp"))
     audio_json_path = os.path.join(tmp_dir, "transcriptions_log.json")
     
     audio_path = None
@@ -388,7 +388,7 @@ for n in notes:
         
             trans = n.get("transcription_clean")
             
-            tmp_dir = os.path.join(os.path.join(os.path.dirname(__file__), "../../src/transcription/tmp"))
+            tmp_dir = os.path.join(os.path.join(os.path.dirname(__file__), "../../src/audio/tmp"))
             audio_json_path = os.path.join(tmp_dir, "transcriptions_log.json")
             
             audio_path = None

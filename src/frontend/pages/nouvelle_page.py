@@ -1,13 +1,13 @@
 import streamlit as st
-from datetime import datetime, timedelta
+from datetime import datetime
 import re
 import os
 from src.frontend.mistral import synthèse
 from src.utils.text_utils import clean_added_text
 import markdown2
 
-MAX_GROUP_DURATION = 2 #minutes
-MAX_PAUSE = 30  # seconde         
+MAX_GROUP_DURATION = 2 # minutes
+MAX_PAUSE = 30  # secondes         
 
 
 @st.cache_data
