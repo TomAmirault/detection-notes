@@ -8,8 +8,6 @@ import json
 import re
 import os
 
-
-
 model_segm = Model.from_pretrained(
 "pyannote/segmentation-3.0")
 

@@ -33,7 +33,6 @@ def whisper_transcribe(audio_path, prompt=WHISPER_PROMPT, pause=True):
                 logs = []
     else:
         logs = []
-        
     
     filename_brut = audio_path.name
 
