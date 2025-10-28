@@ -28,6 +28,9 @@ def speech_activity_splitter(
         audio_path (Path): Path to the audio file to process.
         min_duration_on (float): Minimum duration of a speech segment to keep (in seconds).
         min_duration_off (float): Minimum duration of a pause to consider it as a separation (in seconds).
+        
+    Returns:
+        None
     """
     
     hyper_parameters = {

@@ -1,6 +1,5 @@
 from audio_cleaner import clean_audio_transcription
 from dictionary.prompts import WHISPER_PROMPT
-from dictionary.prompts import MISTRAL_CLEAN_PROMPT
 from dictionary.vocabulary import KNOWN_ABBREVIATIONS, KNOWN_CITY, KNOWN_NAMES
 
 from pathlib import Path
@@ -26,6 +25,10 @@ def whisper_transcribe(
         audio_path (Path or str): Path to the audio file to transcribe.
         pause (bool, optional): If True, performs transcription and logs results. 
                                 If False, removes existing logs for the file and deletes the audio. Defaults to True.
+    Returns:
+        Optional[Tuple[str, str]]: 
+            Tuple of (raw transcription, cleaned transcription) if transcribed, 
+            otherwise None.
     """
     
     log_path = os.path.join("src/audio/tmp", "transcriptions_log.json")

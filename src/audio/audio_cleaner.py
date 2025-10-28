@@ -17,6 +17,12 @@ def clean_audio_transcription(texte: str) -> str:
     - Restores minimal punctuation
     - Does not change the meaning or word order
     - Does not rephrase
+    
+    Args:
+        texte (str): Raw transcription text to clean.
+
+    Returns:
+        str: Cleaned transcription with corrected errors and minimal punctuation.
     """
     prompt = MISTRAL_CLEAN_PROMPT.format(
         texte=texte,

@@ -31,6 +31,9 @@ def record_audio_segments(
         device (int, optional): Audio input device index. Defaults to 0.
         bruit_reduction (bool, optional): If True, applies noise reduction to the recorded audio. Defaults to True.
         samplerate (int, optional): Audio sampling rate in Hz. Defaults to 16000.
+        
+    Returns:
+        None
     """
     
     os.makedirs("src/audio/tests", exist_ok=True)
