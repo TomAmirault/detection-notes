@@ -28,6 +28,25 @@ load_dotenv()
 api_key: str | None = os.getenv("MISTRAL_API_KEY")
 client: Mistral = Mistral(api_key=api_key)
 
+# =============================================================================
+# Configuration Constants
+
+# OCR model selection
+OCR_MODEL: str = "mistral-ocr-latest"
+
+# LLM model for text normalization
+# Options: mistral-small-latest (fast, cheap), mistral-medium-latest (balanced), 
+#          mistral-large-latest (best quality, slower, expensive)
+NORMALIZATION_LLM_MODEL: str = "mistral-small-latest"
+
+# LLM temperature for normalization (0.0 = deterministic, recommended)
+NORMALIZATION_TEMPERATURE: float = 0.0
+
+# Default confidence score for OCR pipeline (placeholder value)
+DEFAULT_OCR_CONFIDENCE: float = 0.5
+
+# =============================================================================
+
 
 def pre_collapse_continuations(text: str) -> str:
     """
@@ -188,7 +207,7 @@ def image_transcription(image_path: str | Path) -> tuple[str, str, float]:
     # Step 1: Extract raw text via OCR
     logger.debug(f"Running OCR on image: {image_path}")
     response = client.ocr.process(
-        model="mistral-ocr-latest",
+        model=OCR_MODEL,
         document={
             "type": "image_url",
             "image_url": f"data:image/jpeg;base64,{base64_image}",
@@ -206,9 +225,9 @@ def image_transcription(image_path: str | Path) -> tuple[str, str, float]:
 
     logger.debug("Sending text to LLM for normalization")
     response = client.chat.complete(
-        model="mistral-small-latest",
+        model=NORMALIZATION_LLM_MODEL,
         messages=[{"role": "user", "content": prompt}],
-        temperature=0.0,
+        temperature=NORMALIZATION_TEMPERATURE,
     )
     clean_text = response.choices[0].message.content.strip()
 
@@ -216,4 +235,4 @@ def image_transcription(image_path: str | Path) -> tuple[str, str, float]:
     clean_text = postprocess_normalized(clean_text)
     logger.info(f"OCR normalization complete. Final length: {len(clean_text)} chars")
 
-    return ocr_text, clean_text, 0.5
+    return ocr_text, clean_text, DEFAULT_OCR_CONFIDENCE

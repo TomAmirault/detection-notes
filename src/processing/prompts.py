@@ -1,9 +1,7 @@
 """
-LLM prompts for OCR normalization and text processing.
-
-This module contains prompt templates used by the OCR/HTR normalization pipeline.
-Centralizing prompts here improves maintainability and version control.
+LLM prompt for OCR normalization and text processing.
 """
+
 
 OCR_NORMALIZATION_PROMPT = """Tu es un assistant de normalisation pour des notes manuscrites RTE.
 Entrée : texte brut d'un OCR (peut contenir du markdown, des puces, des retours ligne erratiques, des erreurs).

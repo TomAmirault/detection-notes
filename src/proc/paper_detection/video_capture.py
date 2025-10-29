@@ -10,7 +10,7 @@ from src.proc.paper_detection.save_detection import save_detection
 
 
 # CAMERA SOURCE (0 for default webcam)
-CAMERA_SOURCE = 1 
+CAMERA_SOURCE = 0
 cap = cv2.VideoCapture(CAMERA_SOURCE)
 
 if not cap.isOpened():
