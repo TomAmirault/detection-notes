@@ -8,10 +8,12 @@ from typing import Tuple, Union, Optional
 import numpy as np
 
 import whisper
+import warnings
 import os
 import json
 
 # 'tiny',  'base', 'small', 'medium', 'large-v1', 'large-v2', 'large-v3', 'large', 'large-v3-turbo', 'turbo'
+warnings.filterwarnings("ignore", message="FP16 is not supported on CPU")
 model = whisper.load_model("large-v3-turbo")
 
 def whisper_transcribe(
@@ -33,7 +35,6 @@ def whisper_transcribe(
     
     log_path = os.path.join("src/audio/tmp", "transcriptions_log.json")
 
-
     if os.path.exists(log_path):
         with open(log_path, "r", encoding="utf-8") as f:
             try:
@@ -52,7 +53,7 @@ def whisper_transcribe(
     
     if pause :
 
-        result = model.transcribe(str(audio_path), prompt=WHISPER_PROMPT.format(
+        result = model.transcribe(str(audio_path), fp16=False, prompt=WHISPER_PROMPT.format(
         KNOWN_ABBREVIATIONS=KNOWN_ABBREVIATIONS,
         KNOWN_NAMES=KNOWN_NAMES,
         KNOWN_CITY=KNOWN_CITY

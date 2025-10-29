@@ -66,6 +66,7 @@ celerybeat.pid
 .env
 .envrc
 .venv
+.venv_py312
 env/
 venv/
 ENV/

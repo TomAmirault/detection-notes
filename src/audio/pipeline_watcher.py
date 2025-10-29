@@ -25,7 +25,8 @@ import json
 import time
 import re
 import concurrent.futures
-
+import warnings
+warnings.filterwarnings("ignore")
 
 import sys
 import os
