@@ -113,6 +113,7 @@ logs/
 # Les poids des modèles YOLO
 src/paper_detection/yolo/model/
 src/paper_detection/tmp/
+src/audio/tmp/
 data
 tests/
 src/recog/archives
