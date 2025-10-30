@@ -11,15 +11,15 @@ if REPO_PATH not in sys.path:
 
 import cv2
 import time
+import matplotlib.pyplot as plt
+import numpy as np
 from datetime import datetime
 from logger_config import setup_logger
 from ultralytics import YOLO
-from segmentation_threshold import crop_image_around_object, get_binary_image_of_text
-from blurry_detection import laplacian_variance
+from src.paper_detection.yolo.segmentation_threshold import crop_image_around_object
+from src.paper_detection.yolo.blurry_detection import laplacian_variance
 from src.processing.add_data2db import add_data2db
 from logger_config import save_fig_with_limit
-import matplotlib.pyplot as plt
-import numpy as np
 
 logger = setup_logger("yolo_tracker_photos")
 
@@ -32,7 +32,7 @@ v_min = 210
 
 
 # YOLOv11 detection model finetuned on the following dataset https://universe.roboflow.com/dty-opi9m/detection-de-feuilles-245oo
-model_path = os.path.join(REPO_PATH, 'src/proc/detection_model/best-detect.pt')
+model_path = os.path.join(REPO_PATH, 'src/paper_detection/yolo/model/best-detect.pt')
 model = YOLO(model_path)
 
 
@@ -93,7 +93,7 @@ try :
                         img = best_image['image']
                         blur_value = best_image['blur_value']
                         stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-                        filename_frame = os.path.join(REPO_PATH, "tmp/paper", f"detected_sheet_{stamp}_{blur_value:.1f}.jpg")
+                        filename_frame = os.path.join(REPO_PATH, "src/paper_detection/tmp", f"detected_sheet_{stamp}_{blur_value:.1f}.jpg")
                         cv2.imwrite(filename_frame, img)
                         add_data2db(filename_frame)
                     buffers = [{'max_buffer_len': 0, "buffer_num": 0}]

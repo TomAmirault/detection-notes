@@ -1,4 +1,6 @@
-# Format of the prompt sent to the Mistral model for entity detection
+"""
+Format of the prompt sent to the Mistral model for entity detection
+"""
 
 NER_PROMPT = """
     Tu es un extracteur d'entités strict en français.

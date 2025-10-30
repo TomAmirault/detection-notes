@@ -32,7 +32,6 @@ from src.backend.db import (
 )
 from src.ner.llm_extraction import extract_entities
 from src.processing.mistral_ocr_llm import image_transcription
-from src.utils.image_utils import encode_image
 from src.utils.text_utils import (
     clean_added_text,
     compute_diff,

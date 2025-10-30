@@ -1,4 +1,6 @@
-# Utilities for perspective correction of a sheet in an image
+"""
+Utilities for perspective correction of a sheet in an image
+"""
 
 import cv2
 import numpy as np

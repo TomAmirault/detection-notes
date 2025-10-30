@@ -1,5 +1,7 @@
-# Detects quadrilateral shapes in an image and filters them based on size and color
-# Only white quadrilaterals likely to represent sheets of paper are kept
+"""
+Detects quadrilateral shapes in an image and filters them based on size and color
+Only white quadrilaterals likely to represent sheets of paper are kept
+"""
 
 import cv2
 import numpy as np

@@ -1,5 +1,4 @@
 import numpy as np
-import cv2
 
 def minkowski_resize(img: np.ndarray, new_shape: tuple[int, int], p: int = 2) -> np.ndarray:
     """Resize an image using an interpolation based on Minkowski mean.

@@ -202,6 +202,7 @@ def image_transcription(image_path: str | Path) -> tuple[str, str, float]:
         Exception: Propagates errors from Mistral API calls.
     """
     # Encode image for API transmission
+    print(image_path)
     base64_image = encode_image(str(image_path))
 
     # Step 1: Extract raw text via OCR

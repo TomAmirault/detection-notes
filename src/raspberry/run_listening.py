@@ -11,7 +11,7 @@ RASPBERRY_USER = "projetrte"
 LOCAL_SCRIPT_PATH = WORKING_DIR + "detection-notes/src/raspberry/pilote_camera_photo.py"
 REMOTE_SCRIPT_PATH = "/home/projetrte/Documents/pilote_camera_photo.py"
 REMOTE_OUTPUT_DIR = "/home/projetrte/Documents/photos"
-LOCAL_DEST_DIR = WORKING_DIR + "detection-notes/tmp"
+LOCAL_DEST_DIR = WORKING_DIR + "detection-notes/raspberry/tmp/"
 STOP_FILE = "/home/projetrte/Documents/stop.txt"
 
 try:

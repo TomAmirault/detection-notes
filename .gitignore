@@ -110,22 +110,16 @@ __marimo__/
 data/
 # Logs
 logs/
-# Dossiers de transit des images captées par la Raspberry
-tmp/
 # Les poids des modèles YOLO
-src/proc/detection_model/
+src/paper_detection/yolo/model/
+src/paper_detection/tmp/
 data
 tests/
 src/recog/archives
 src/recog/test_set/
 datasets_yolo/
-src/proc/paper_detection/benchmark/data
-src/proc/paper_detection/test_image.py
-src/proc/paper_detection/test_video.py
+src/paper_detection/benchmark/data
 runs/
-src/ner/model_sauvegarde/
-src/ner/db.csv
-src/ner/db.conll
 test_MLB/
 voice_assistant/
 

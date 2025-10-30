@@ -1,5 +1,7 @@
-# Configuration of parameters used for leaf detection via contour detection
-# Returns the parameters to be updated in shape_detector.py after configuration
+"""
+Configuration of parameters used for leaf detection via contour detection
+Returns the parameters to be updated in shape_detector.py after configuration
+"""
 
 import sys, os
 REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
@@ -8,7 +10,7 @@ if REPO_PATH not in sys.path:
 import cv2
 import numpy as np
 import time
-from src.proc.paper_detection.shape_detector import shape_detector
+from src.paper_detection.edges_based.shape_detector import shape_detector
 
 
 def tune_shape_detector_camera() -> dict[str, float]:

@@ -1,4 +1,6 @@
-# Extracts, via a call to the Mistral model API, the entities belonging to the different categories
+"""
+Extracts, via a call to the Mistral model API, the entities belonging to the different categories
+"""
 
 import sys, os
 REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))

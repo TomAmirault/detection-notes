@@ -5,7 +5,6 @@ if REPO_PATH not in sys.path:
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
-import time
 from src.image_similarity.resize_minkowski_interpolation import minkowski_resize
 from datetime import datetime
 from logger_config import setup_logger, save_fig_with_limit

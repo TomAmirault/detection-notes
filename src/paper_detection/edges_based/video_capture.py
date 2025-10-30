@@ -1,12 +1,14 @@
-# Main script for paper detection using edge-based shape detection
+"""
+Main script for paper detection using edge-based shape detection
+"""
 
 import sys, os
 REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
 if REPO_PATH not in sys.path:
     sys.path.insert(0, REPO_PATH)
 import cv2
-from src.proc.paper_detection.shape_detector import shape_detector
-from src.proc.paper_detection.save_detection import save_detection
+from src.paper_detection.edges_based.shape_detector import shape_detector
+from src.paper_detection.edges_based.save_detection import save_detection
 
 
 # CAMERA SOURCE (0 for default webcam)

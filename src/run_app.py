@@ -32,7 +32,7 @@ SERVICE_STARTUP_DELAY: float = 0.5
 
 # Enable/disable individual services
 ENABLE_FRONTEND: bool = True
-ENABLE_PAPER_DETECTION: bool = True
+ENABLE_EDGES_BASED_DETECTION: bool = True
 ENABLE_YOLO_TRACKER: bool = False  # Advanced paper detection (optional)
 ENABLE_RASPBERRY_PI: bool = False  # Physical camera integration (optional)
 ENABLE_AUDIO_PIPELINE: bool = True
@@ -63,8 +63,8 @@ def main():
 
     # Service paths
     streamlit_path = os.path.join(BASE_DIR, "frontend/app_streamlit.py")
-    video_capture_path = os.path.join(BASE_DIR, "proc/paper_detection/video_capture.py")
-    yolo_path = os.path.join(BASE_DIR, "proc/paper_detection/yolo_tracker_photos.py")
+    edges_based_path = os.path.join(BASE_DIR, "paper_detection/edges_based/video_capture.py")
+    yolo_path = os.path.join(BASE_DIR, "paper_detection/yolo/yolo_tracker_photos.py")
     raspberry_path = os.path.join(BASE_DIR, "raspberry/launch_rasp.py")
     audio_path = os.path.join(BASE_DIR, "audio/pipeline_watcher.py")
     clear_db_path = os.path.join(BASE_DIR, "backend/clear_db.py")
@@ -96,11 +96,11 @@ def main():
             time.sleep(SERVICE_STARTUP_DELAY)
 
         # Step 3: Launch paper detection services
-        if ENABLE_PAPER_DETECTION:
-            logger.info("Starting paper detection system (video capture)")
+        if ENABLE_EDGES_BASED_DETECTION:
+            logger.info("Starting paper detection system (edges-based)")
             processes.append(
                 subprocess.Popen(
-                    [sys.executable, video_capture_path],
+                    [sys.executable, edges_based_path],
                     stdout=sys.stdout,
                     stderr=sys.stderr,
                     cwd=PROJECT_ROOT,
@@ -150,8 +150,8 @@ def main():
         active_services = []
         if ENABLE_FRONTEND:
             active_services.append("Frontend UI")
-        if ENABLE_PAPER_DETECTION:
-            active_services.append("Paper Detection")
+        if ENABLE_EDGES_BASED_DETECTION:
+            active_services.append("Edges-based Detection")
         if ENABLE_YOLO_TRACKER:
             active_services.append("YOLO Tracker")
         if ENABLE_RASPBERRY_PI:

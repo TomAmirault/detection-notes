@@ -1,52 +1,13 @@
 '''This module provides functions to detect a sheet of paper on an image, segment it, and correct its perspective.'''
 import numpy as np
 import cv2
-from matplotlib import pyplot as plt
 import os
-from datetime import datetime
-from perspective_corrector import corrected_perspective
+import sys
+REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
+if REPO_PATH not in sys.path:
+    sys.path.insert(0, REPO_PATH)
+from src.paper_detection.edges_based.perspective_corrector import order_corners, get_output_size
 
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-
-def order_corners(corners:np.ndarray) -> np.ndarray:
-    """Order the corners
-
-    Args:
-        corners (np.ndarray): a list of 4 points (x, y)
-
-    Returns:
-        np.ndarray: ordered corners (top-left, top-right, bottom-right, bottom-left)
-    """    
-    rect = np.zeros((4, 2), dtype=np.float32)
-
-    s = corners.sum(axis=1)
-    rect[0] = corners[np.argmin(s)]
-    rect[2] = corners[np.argmax(s)]
-
-    diff = np.diff(corners, axis=1)
-    rect[1] = corners[np.argmin(diff)]
-    rect[3] = corners[np.argmax(diff)]
-
-    return rect
-
-def get_output_size(corners:np.ndarray) -> tuple[int, int]:
-    """Compute the size of the output image after perspective correction.
-    
-    Args:
-        corners (np.ndarray): ordered corners (top-left, top-right, bottom-right, bottom-left)
-
-    Returns:
-        tuple[int, int]: size of the output image, after perspective correction (width, height)
-    """    
-    width_top = np.linalg.norm(corners[0] - corners[1])
-    width_bottom = np.linalg.norm(corners[2] - corners[3])
-    max_width = int(max(width_top, width_bottom))
-
-    height_left = np.linalg.norm(corners[0] - corners[3])
-    height_right = np.linalg.norm(corners[1] - corners[2])
-    max_height = int(max(height_left, height_right))
-
-    return max_width, max_height
 
 def corrected_perspective_white(img:np.ndarray, corners:np.ndarray) -> np.ndarray:
     """Applies a perspective correction to straighten the sheet, adding a white background where needed.
@@ -69,6 +30,7 @@ def corrected_perspective_white(img:np.ndarray, corners:np.ndarray) -> np.ndarra
         img, transformation_matrix, (output_width, output_height), flags=cv2.INTER_LANCZOS4, borderMode=cv2.BORDER_CONSTANT, borderValue=(255, 255, 255))
     return corrected
 
+
 def get_extreme_points(mask:np.ndarray) -> np.ndarray:
     """Get the nearest points of the binary mask from the 4 corners of the image.
 
@@ -89,6 +51,7 @@ def get_extreme_points(mask:np.ndarray) -> np.ndarray:
         extreme_points.append(points[closest_idx])
     extreme_points = np.array(extreme_points)
     return extreme_points
+
 
 def get_mask(img : np.ndarray) -> np.ndarray :
     """It applies threshlolding and morphological operations to obtain a binary mask
@@ -120,7 +83,6 @@ def get_mask(img : np.ndarray) -> np.ndarray :
     return largest_mask
 
 
-
 def crop_image_around_object(img:np.ndarray, rect:tuple[int]) -> np.ndarray:
     """It is the main function of this module and segments, crops and corrects the perspective of the image.
 
@@ -149,6 +111,7 @@ def crop_image_around_object(img:np.ndarray, rect:tuple[int]) -> np.ndarray:
     cropped = corrected_perspective_white(corrected_image, extreme_points)
 
     return cropped
+
 
 def get_binary_image_of_text(img:np.ndarray, rect:tuple) -> np.ndarray:
     """This function goes further the man function crop_image_around_object by thresholding the writings

@@ -1,10 +1,12 @@
-# Handles the detection and saving of paper-like quadrilaterals
+"""
+Handles the detection and saving of paper-like quadrilaterals
+"""
 
 import sys, os
 REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
 if REPO_PATH not in sys.path:
     sys.path.insert(0, REPO_PATH)
-from src.proc.paper_detection.perspective_corrector import corrected_perspective
+from src.paper_detection.edges_based.perspective_corrector import corrected_perspective
 from src.processing.add_data2db import add_data2db
 import cv2
 import time
@@ -12,12 +14,8 @@ import numpy as np
 from datetime import datetime
 
 
-# Folder where the current file is located
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.abspath(os.path.join(BASE_DIR, "../../..")))
-
 # Output settings
-OUT_DIR = os.path.join(BASE_DIR, "../../../tmp/paper")
+OUT_DIR = os.path.join(REPO_PATH, "src/paper_detection/tmp")
 os.makedirs(OUT_DIR, exist_ok=True)
 
 # Minimum cooldown between two saves

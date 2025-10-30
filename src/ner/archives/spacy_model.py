@@ -1,7 +1,9 @@
 import spacy
-from spacy.pipeline import EntityRuler
 import re
 
+# python -m spacy download fr_core_news_lg 
+# Model
+nlp = spacy.load("fr_core_news_lg")
 
 # Dictionnaire des abréviations
 ABBREVIATIONS_DICT = {
@@ -125,9 +127,6 @@ def translate_abbreviations(text, abbr_dict=ABBREVIATIONS_DICT):
 
     return translated_text
 
-
-# Model
-nlp = spacy.load("fr_core_news_lg")
 
 # EntityRuler
 ruler = nlp.add_pipe("entity_ruler", after="ner",

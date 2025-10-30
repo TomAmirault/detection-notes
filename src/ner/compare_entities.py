@@ -1,5 +1,7 @@
-# Compare the similarity between two sets of entities extracted from texts, using weighting by entity category
-# The main goal is to determine whether two texts refer to the same event
+"""
+Compare the similarity between two sets of entities extracted from texts, using weighting by entity category
+The main goal is to determine whether two texts refer to the same event
+"""
 
 from rapidfuzz import fuzz
 

@@ -3,9 +3,6 @@
 import cv2
 import numpy as np
 from ultralytics.engine.results import Results
-import os
-
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
 def laplacian_variance(img:np.ndarray, grid_size: tuple[int]=(40, 40), top_k: int=100) -> float:
