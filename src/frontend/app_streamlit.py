@@ -138,7 +138,7 @@ st.title(PAGE_TITLE)
 
 # --- ADD NAVIGATION BUTTON ---
 if st.button("Consulter la synthèse"):
-    st.switch_page("pages/nouvelle_page.py") 
+    st.switch_page("pages/app_timeline_cards.py") 
 
 cfg = load_config()
 etat = "▶️ En lecture (True)" if cfg["pause"] else "⏸️ En pause (False)"
@@ -268,7 +268,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-with open("src/frontend/log.txt", "w") as f:  
+with open("src/summary/log.txt", "w") as f:  
     f.write("Nouveau contenu du log.\n\n")
 
 # Display as cards
@@ -305,12 +305,12 @@ for n in notes:
             
             if audio_path and os.path.exists(audio_path):
                 st.markdown(f"**TS:** {audio_start}")
-                with open("src/frontend/log.txt", "a") as f:  
+                with open("src/summary/log.txt", "a") as f:  
                     f.write(f"{audio_start}\n")
 
             elif img_path:
                 st.markdown(f"**TS:** {ts_human(n['ts'])}")
-                with open("src/frontend/log.txt", "a") as f:  
+                with open("src/summary/log.txt", "a") as f:  
                     f.write(f"{ts_human(n['ts'])}\n")
 
             if n.get("note_id"):
@@ -322,7 +322,7 @@ for n in notes:
         with cols[1]:
             st.markdown("**Informations ajoutées**")
             st.markdown(f"```\n{n.get('texte_ajoute') or '—'}\n```")
-            with open("src/frontend/log.txt", "a") as f: 
+            with open("src/summary/log.txt", "a") as f: 
                 f.write(f"{n.get('texte_ajoute') or '—'}\n")
             
         # Right column: entities

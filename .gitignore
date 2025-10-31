@@ -127,4 +127,4 @@ voice_assistant/
 src/compute_diff_tests.ipynb
 src/test_full_pipeline.ipynb
 
-src/frontend/log.txt
+src/summary/log.txt

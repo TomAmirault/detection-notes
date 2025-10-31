@@ -1,12 +1,31 @@
+"""
+Streamlit app that reads log entries, groups them based on time gaps, generates an automatic
+summary for each group, and displays the summaries as chronological cards.
+"""
+
 import streamlit as st
-from datetime import datetime
 import re
-from src.frontend.mistral import synthèse
-from src.utils.text_utils import clean_added_text
 import markdown2
 
+from datetime import datetime
+
+import sys
+import os
+REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
+if REPO_PATH not in sys.path:
+    sys.path.insert(0, REPO_PATH)
+
+from src.summary.note_summarizer import synthèse
+from src.utils.text_utils import clean_added_text
+
+
+# Maximum duration (in minutes) : maximum total duration of a group.
+# If the group exceeds this duration (in minutes), the group is closed and a new one is started.
 MAX_GROUP_DURATION = 2 # minutes
-MAX_PAUSE = 30  # secondes         
+
+# Maximum pause (in secondes) : maximum allowed gap between two pieces of information for them to be considered part of the same group.
+# If the pause between two logs exceeds this value, a new group is created.
+MAX_PAUSE = 30 # secondes         
 
 
 @st.cache_data
@@ -17,11 +36,10 @@ def get_synthese(contenu):
 st.set_page_config(page_title="Cartes Logs", layout="wide")
 
 
-
-with open("src/frontend/log.txt", "r", encoding="utf-8") as f:
+with open("src/summary/log.txt", "r", encoding="utf-8") as f:
     lignes = f.readlines()
 
-# === Extraction des blocs temporels ===
+# Parse logs: extract timestamp + text
 logs = []
 for ligne in lignes:
     match = re.match(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})(.*)", ligne.strip())
@@ -29,14 +47,13 @@ for ligne in lignes:
         timestamp = datetime.strptime(match.group(1), "%Y-%m-%d %H:%M:%S")
         texte = match.group(2).strip()
         logs.append((timestamp, texte))
-    elif logs:
+    elif logs:  
         logs[-1] = (logs[-1][0], logs[-1][1] + "\n" + ligne.strip())
 
-
-
-
+# Chronological sorting
 logs.sort(key=lambda x: x[0])
 
+# Group logs by time window
 groupes = []
 current_group = []
 start_time = None
@@ -44,53 +61,41 @@ start_time = None
 for i, (date, text) in enumerate(logs):
     if not current_group:
         current_group.append(text)
-        start_time = date
-        end_time = date
+        start_time = end_time = date
     else:
         delta = date - end_time
+        # If long pause or max duration exceeded → new group
         if delta.total_seconds() > MAX_PAUSE or (date - start_time).total_seconds() > MAX_GROUP_DURATION*60:
             groupes.append([start_time, end_time, "\n".join(current_group)])
             current_group = [text]
-            start_time = date
-            end_time = date
+            start_time = end_time = date
         else:
             current_group.append(text)
             end_time = date
 
+# Add last group
 if current_group:
     groupes.append([start_time, end_time, "\n".join(current_group)])
 
+# Display colors for cards
+couleurs = ["#009fe3", "#43b7ea", "#85cff1", "#c7e7f8"]
 
-
-# === Couleurs pour les cartes ===
-couleurs = [
-    "#009fe3",  # Bleu RTE principal
-    "#43b7ea",  # Bleu lumineux
-    "#85cff1",  # Bleu doux et clair
-    "#c7e7f8",  # Bleu très pâle
-]
 st.title("Synthèses Chronologique")
 
 if st.button("Retour à l'accueil"):
     st.switch_page("app_streamlit.py")
 
-
+# Display summaries (reverse order, one card per group)
 groupes = list(reversed(groupes))
 for i, groupe in enumerate(groupes):
     couleur = couleurs[i % len(couleurs)]
-    
-    
     date_start = groupe[0].strftime("%Y-%m-%d %H:%M:%S")
     date_end = groupe[1].strftime("%Y-%m-%d %H:%M:%S")
-    contenu = groupe[2]  
-    
-    contenu = clean_added_text(contenu)
+    contenu = clean_added_text(groupe[2])
+
     synthese = get_synthese(contenu)
-
-
-      
-
     synthese_html = markdown2.markdown(synthese)
+
     st.markdown(
         f"""
         <div style="
@@ -106,5 +111,3 @@ for i, groupe in enumerate(groupes):
         """,
         unsafe_allow_html=True
     )
-
-
