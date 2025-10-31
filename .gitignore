@@ -123,7 +123,7 @@ src/paper_detection/benchmark/data
 runs/
 test_MLB/
 voice_assistant/
-
+src/paper_detection/benchmark/Yolo-seg.pt
 src/compute_diff_tests.ipynb
 src/test_full_pipeline.ipynb
 
