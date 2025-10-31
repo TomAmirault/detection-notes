@@ -196,17 +196,3 @@ def isSimilar(old_img_path:Path, new_img_path:Path) -> bool:
         logger.error("Exception during the execution of isSimilar: " + str(e))
         return False
 
-if __name__ == '__main__':
-    tmp_dir = os.path.join(REPO_PATH, "tmp/test-similarity")
-    files = os.listdir(tmp_dir)
-    files = [f for f in files if f.endswith('.jpg')]
-    
-    print("Longueur de files :", len(files))
-
-    im0_path = os.path.join(tmp_dir, "detection_20251022-102208-532_q0.jpg")
-
-    for f in files:
-        print("L'image traitée est :", f)
-        filename = os.path.join(tmp_dir, f)
-        res = isSimilar(im0_path, filename)
-        print("Resultat de la comparaison :", res)

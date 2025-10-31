@@ -129,7 +129,3 @@ def tune_shape_detector_camera() -> dict[str, float]:
     }
     return final_config
 
-
-if __name__ == "__main__":
-    cfg = tune_shape_detector_camera()
-    print("Configuration finale :", cfg)
