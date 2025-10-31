@@ -14,13 +14,13 @@ local_campilots_relative_paths = ["src/raspberry/paper_detection_raspberrypi/per
                                   "src/raspberry/paper_detection_raspberrypi/save_detection_raspberrypi.py",
                                   "src/raspberry/paper_detection_raspberrypi/shape_detector_raspberrypi.py",
                                   "src/raspberry/paper_detection_raspberrypi/video_capture_raspberrypi.py"]
-LOCALxREMOTE_CAMPILOTS_PATHS = {os.path.join(REPO_PATH, rp):os.path.join("/home/projetrte/Documents/pilots", os.path.basename(rp)) for rp in local_campilots_relative_paths}
+LOCALxREMOTE_CAMPILOTS_PATHS = {os.path.join(REPO_PATH, rp):os.path.join("/home", RASPBERRY_USER, "Documents/pilots", os.path.basename(rp)) for rp in local_campilots_relative_paths}
 REMOTE_MAIN_PATH = LOCALxREMOTE_CAMPILOTS_PATHS[os.path.join(REPO_PATH, "src/raspberry/paper_detection_raspberrypi/video_capture_raspberrypi.py")]
-REMOTE_OUTPUT_DIR = "/home/projetrte/Documents/photos"
+REMOTE_OUTPUT_DIR = os.path.join("/home", RASPBERRY_USER, "Documents/photos")
 LOCAL_OUTPUT_DIR = os.path.join(REPO_PATH, "tmp")
 
-REMOTE_LOG_DIR = "/home/projetrte/Documents/logs"
-STOP_FILE_PATH = "/home/projetrte/Documents/stop.txt"
+REMOTE_LOG_DIR = os.path.join("/home", RASPBERRY_USER, "Documents/logs")
+STOP_FILE_PATH = os.path.join("/home", RASPBERRY_USER, "Documents/stop.txt")
 
 logger = setup_logger("launch_rasp")
 

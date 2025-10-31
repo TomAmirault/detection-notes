@@ -11,7 +11,8 @@ from datetime import datetime
 
 
 # Output settings
-OUT_DIR = "/home/projetrte/Documents/photos"
+RASPBERRY_USER = "projetrte"
+OUT_DIR = os.path.join("/home", RASPBERRY_USER, "Documents/photos")
 os.makedirs(OUT_DIR, exist_ok=True)
 
 # Minimum cooldown between two saves
