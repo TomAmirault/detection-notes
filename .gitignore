@@ -1,4 +1,6 @@
+##################################
 # Python / Compilation / Packaging
+##################################
 __pycache__/
 *.py[codz]
 *$py.class
@@ -26,7 +28,9 @@ MANIFEST
 pip-log.txt
 pip-delete-this-directory.txt
 
+##################################
 # Tests / Coverage / CI
+##################################
 htmlcov/
 .tox/
 .nox/
@@ -41,7 +45,9 @@ coverage.xml
 .pytest_cache/
 cover/
 
-# Frameworks / Outils Python
+##################################
+# Python Framework / Tools
+##################################
 *.mo
 *.pot
 *.log
@@ -63,6 +69,8 @@ __pypackages__/
 celerybeat-schedule
 celerybeat.pid
 *.sage.py
+
+# Virtual environments
 .env
 .envrc
 .venv
@@ -72,6 +80,8 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+
+# IDE / Editor configs
 .spyderproject
 .spyproject
 .ropeproject
@@ -83,18 +93,24 @@ dmypy.json
 .pytype/
 cython_debug/
 
-# IDE / Editeurs
+##################################
+# IDE / Editors
+##################################
 # PyCharm
 #.idea/
-# Visual Studio Code
+
+# VS Code
 .vscode/
-# Cursor
+
+# Cursor editor
 .cursorignore
 .cursorindexingignore
-# JetBrains
-# Voir JetBrains.gitignore
 
-# Outils spécifiques
+# JetBrains (see JetBrains.gitignore for full rules)
+
+##################################
+# Lint / Tooling
+##################################
 .ruff_cache/
 .pypirc
 .abstra/
@@ -102,29 +118,45 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-# Systèmes / OS
+##################################
+# System / OS files
+##################################
 .DS_Store
 
-# Données locales / Images / Logs / Modèles
-# Bases de données locales
+##################################
+# Local Data / Images / Logs / Models
+##################################
+
+# Local data storage
 data/
+data
+
 # Logs
 logs/
-# Les poids des modèles YOLO
+
+# YOLO model weights & temp outputs
 src/paper_detection/yolo/model/
 src/paper_detection/tmp/
+datasets_yolo/
+runs/
+
+# Audio temp directory
 src/audio/tmp/
-data
+
+# Archives / Test data
 tests/
 src/recog/archives
 src/recog/test_set/
-datasets_yolo/
-src/paper_detection/benchmark/data
-runs/
 test_MLB/
 voice_assistant/
+
+# Benchmark / Large assets
+src/paper_detection/benchmark/data
 src/paper_detection/benchmark/Yolo-seg.pt
+
+# Notebooks (large local ones)
 src/compute_diff_tests.ipynb
 src/test_full_pipeline.ipynb
 
+# Logs
 src/summary/log.txt
