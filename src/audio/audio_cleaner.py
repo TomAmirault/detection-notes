@@ -1,10 +1,13 @@
-from dictionary.prompts import MISTRAL_CLEAN_PROMPT
-from dictionary.vocabulary import KNOWN_ABBREVIATIONS, KNOWN_CITY, KNOWN_NAMES
+import sys
+import os
+REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
+if REPO_PATH not in sys.path:
+    sys.path.insert(0, REPO_PATH)
+from src.audio.dictionary.prompts import MISTRAL_CLEAN_PROMPT
+from src.audio.dictionary.vocabulary import KNOWN_ABBREVIATIONS, KNOWN_CITY, KNOWN_NAMES
 
 from mistralai import Mistral
 from dotenv import load_dotenv
-
-import os
 
 load_dotenv()
 api_key = os.getenv("MISTRAL_API_KEY")
@@ -39,15 +42,6 @@ def clean_audio_transcription(texte: str) -> str:
 
     clean_text = response.choices[0].message.content.strip()
     return clean_text
-
-
-
-if __name__ == "__main__":
-    transcription = """
-    alors on a fait la maintenance du poste t quatre ce matin
-    on a aussi verifié le relais principal et on a rien detecté d'anormal
-    """
-    print(clean_audio_transcription(transcription))
 
 
 

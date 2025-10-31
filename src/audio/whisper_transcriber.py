@@ -1,16 +1,18 @@
-from audio_cleaner import clean_audio_transcription
-from dictionary.prompts import WHISPER_PROMPT
-from dictionary.vocabulary import KNOWN_ABBREVIATIONS, KNOWN_CITY, KNOWN_NAMES
-
-from pathlib import Path
-from typing import Tuple, Union, Optional
-
-import numpy as np
-
 import whisper
 import warnings
-import os
 import json
+import sys
+import os
+import numpy as np
+from pathlib import Path
+from typing import Tuple, Union, Optional
+REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
+if REPO_PATH not in sys.path:
+    sys.path.insert(0, REPO_PATH)
+from src.audio.audio_cleaner import clean_audio_transcription
+from src.audio.dictionary.prompts import WHISPER_PROMPT
+from src.audio.dictionary.vocabulary import KNOWN_ABBREVIATIONS, KNOWN_CITY, KNOWN_NAMES
+
 
 # 'tiny',  'base', 'small', 'medium', 'large-v1', 'large-v2', 'large-v3', 'large', 'large-v3-turbo', 'turbo'
 warnings.filterwarnings("ignore", message="FP16 is not supported on CPU")

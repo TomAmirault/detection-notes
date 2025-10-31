@@ -1,19 +1,21 @@
+"""
+Streamlit frontend for displaying notes, files, entities, and summaries,
+with filtering tools and user actions.
+"""
+
 import streamlit as st
 import importlib.util
-from typing import List, Dict, Any, Optional
-from datetime import datetime
-from PIL import Image
 import json
 import time
 import sqlite3
-
-# Ajoute la racine du projet au sys.path pour permettre les imports internes
 import sys
 import os
 REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
 if REPO_PATH not in sys.path:
     sys.path.insert(0, REPO_PATH)
-
+from typing import List, Dict, Any, Optional
+from datetime import datetime
+from PIL import Image
 from src.backend.db import ensure_db
 ensure_db()
 
@@ -30,20 +32,18 @@ list_notes_by_note_id = db.list_notes_by_note_id
 list_notes_by_evenement_id = db.list_notes_by_evenement_id
 
 
-# Pour lancer le front : streamlit run src/frontend/app_streamlit.py
+# To launch the frontend: streamlit run src/frontend/app_streamlit.py
 
 # --- Config ---
 DB_PATH = os.environ.get("RTE_DB_PATH", "data/db/notes.sqlite")
 PAGE_TITLE = "Historique Chronologique"
-REFRESH_SECONDS = 5  # auto refresh (0 = désactiver)
+REFRESH_SECONDS = 5  # auto refresh (0 = disable)
 
-
-# --- Utils DB ---
+# --- DB Utils ---
 def get_conn(db_path: str):
     con = sqlite3.connect(db_path)
     con.row_factory = sqlite3.Row
     return con
-
 
 def fetch_notes(limit: int = 50,
                 ts_from: Optional[int] = None,
@@ -91,11 +91,11 @@ def safe_image(path: Optional[str]) -> Optional[str]:
         return path
     return None
 
-# --- Fonctions utilitaires ---
-
+# --- Utility functions ---
 CONFIG_PATH = "src/audio/pause_status.json"
+
 def load_config():
-    """Charge le fichier pause_status.json, ou le crée s'il n'existe pas."""
+    """Loads the pause_status.json file, or creates it if it doesn't exist."""
     if not os.path.exists(CONFIG_PATH):
         with open(CONFIG_PATH, "w") as f:
             json.dump({"pause": True}, f)
@@ -103,12 +103,12 @@ def load_config():
         return json.load(f)
 
 def save_config(cfg):
-    """Sauvegarde la configuration dans pause_status.json."""
+    """Saves the configuration to pause_status.json."""
     with open(CONFIG_PATH, "w") as f:
         json.dump(cfg, f, indent=4)
 
 def toggle_pause():
-    """Inverse la valeur de pause dans pause_status.json."""
+    """Changes the pause value in pause_status.json."""
     cfg = load_config()
     cfg["pause"] = not cfg["pause"]
     save_config(cfg)
@@ -116,9 +116,8 @@ def toggle_pause():
 
 def evaluation_fiabilite(score: float) -> str:
     """
-    Retourne un niveau de fiabilité textuel selon un score de confiance Whisper.
+    Returns a textual reliability level based on a Whisper confidence score.
     """
-
     if score >= 0.90:
         return "Très fiable"
     elif score >= 0.75:
@@ -137,21 +136,16 @@ st.set_page_config(page_title=PAGE_TITLE, layout="wide")
 st.title(PAGE_TITLE)
 
 
-# --- AJOUT DU BOUTON DE NAVIGATION ---
-# Placez ce bloc où vous souhaitez voir le bouton
+# --- ADD NAVIGATION BUTTON ---
 if st.button("Consulter la synthèse"):
-    st.switch_page("pages/nouvelle_page.py") # Chemin vers votre nouvelle page
-# ------------------------------------
-
+    st.switch_page("pages/nouvelle_page.py") 
 
 cfg = load_config()
 etat = "▶️ En lecture (True)" if cfg["pause"] else "⏸️ En pause (False)"
 st.write(f"**État actuel :** {etat}")
 
-
 if st.button("Pause / Lecture", on_click=toggle_pause):
     st.rerun()
-
 
 # Sidebar filtres
 with st.sidebar:
@@ -166,7 +160,7 @@ with st.sidebar:
     with col2:
         date_to = st.date_input("Jusqu'à (date)", value=None)
 
-    # Conversion dates en timestamps
+    # Convert dates to timestamps
     ts_from = int(time.mktime(datetime.combine(
         date_from, datetime.min.time()).timetuple())) if date_from else None
     ts_to = int(time.mktime(datetime.combine(
@@ -176,7 +170,7 @@ with st.sidebar:
     if st.button("Rafraîchir maintenant"):
         st.rerun()
 
-    # Filtre note_id
+    # Filter by note_id
     st.subheader("Filtrer par note")
     all_notes = list_notes(limit=200)
     note_ids = sorted({n["note_id"] for n in all_notes if n["note_id"]})
@@ -191,7 +185,7 @@ with st.sidebar:
         selected_note_id = "(toutes)"
         st.caption("Aucune note disponible pour le moment.")
         
-    # Filtres par événement
+    # Filters by event
     st.subheader("Filtrer par événement")
     evenement_ids = list(set(sorted([n["evenement_id"] for n in all_notes if n["evenement_id"]])))
     if note_ids:
@@ -204,7 +198,7 @@ with st.sidebar:
         selected_evenement_id = "(tous)"
         st.caption("Aucun événement disponible pour le moment.")
         
-    # Filtres par entité
+    # Filters by entity
     st.subheader("Recherche entités")
     entity_query = st.text_input(
         "Rechercher dans toutes les entités (mots séparés par des espaces)",
@@ -214,7 +208,7 @@ with st.sidebar:
     notes_entity_filtered = None
 
     if entity_query.strip():
-        # Découpage en mots-clés
+        # Split into keywords
         terms = [t.strip() for t in entity_query.split() if t.strip()]
 
         entity_columns = [
@@ -222,9 +216,9 @@ with st.sidebar:
             "entite_INFRASTRUCTURE", "entite_OPERATING_CONTEXT",
             "entite_PHONE_NUMBER", "entite_ELECTRICAL_VALUE", "entite_ABBREVIATION_UNKNOWN"
         ]
-
-        # Pour chaque terme, on crée un OR entre toutes les colonnes entités
-        # Puis on combine les différents termes avec AND (chaque mot doit apparaître quelque part)
+        
+        # For each term, create an OR across all entity columns
+        # Then combine the different terms with AND (each word must appear somewhere)
         term_clauses = []
         params = []
 
@@ -250,23 +244,23 @@ with st.sidebar:
         st.write(f"**{len(notes_entity_filtered)}** notes trouvées correspondant aux critères entités.")
 
 
-# Chargement des notes
+# Loading notes
 if notes_entity_filtered is not None:
     notes = notes_entity_filtered
 elif selected_evenement_id != "(tous)":
-    # Filtrage sur evenement_id
+    # Filtering by evenement_id
     notes = list_notes_by_evenement_id(selected_evenement_id, limit=limit)
 elif selected_note_id == "(toutes)":
-    # Filtrage classique sur note_id
+    # Standard filtering by note_id
     notes = fetch_notes(limit=limit, ts_from=ts_from, ts_to=ts_to, q=q)
 else:
     notes = list_notes_by_note_id(selected_note_id, limit=limit)
 
-# Auto-refresh léger
+# Light auto-refresh
 if REFRESH_SECONDS > 0:
     st.query_params["_"] = str(int(time.time() // REFRESH_SECONDS))
 
-# Bandeau résumé
+# Summary banner
 st.markdown(f"**{len(notes)}** notes affichées")
 
 st.markdown(
@@ -277,13 +271,12 @@ st.markdown(
 with open("src/frontend/log.txt", "w") as f:  
     f.write("Nouveau contenu du log.\n\n")
 
-# Affichage en cartes
+# Display as cards
 for n in notes:
     st.markdown("---")
     score_confiance = n.get("confidence_score")
 
-    
-    # Colonnes principales : meta, résumé et entités
+    # Main columns: meta, summary, and entities
     cols = st.columns([1, 3, 2])
 
     img_path = safe_image(n.get("img_path_proc"))
@@ -306,7 +299,7 @@ for n in notes:
                 
 
     if audio_score > 0.3 :
-        # Colonne gauche : méta
+        # Left column: meta
         with cols[0]:
             st.markdown(f"**ID:** {n['id']}")
             
@@ -325,14 +318,14 @@ for n in notes:
             if n.get("evenement_id"):
                 st.caption(f"événement: {n['evenement_id']}")
 
-        # Colonne centre : Informations ajoutées
+       # Center column: Added information
         with cols[1]:
             st.markdown("**Informations ajoutées**")
             st.markdown(f"```\n{n.get('texte_ajoute') or '—'}\n```")
-            with open("src/frontend/log.txt", "a") as f:  # "a" = append (ajouter à la fin du fichier)
+            with open("src/frontend/log.txt", "a") as f: 
                 f.write(f"{n.get('texte_ajoute') or '—'}\n")
             
-        # Colonne droite : entités
+        # Right column: entities
         with cols[2]:
             def parse_entities_field(field_name: str):
                 val = n.get(field_name)
@@ -378,12 +371,12 @@ for n in notes:
             else:
                 st.caption("Aucune entité")
 
-        # --- Menu déroulant pour détails complets ---
+        # --- Dropdown menu for full details ---
         with st.expander("Voir plus de détails et fichiers"):
-            # Colonnes dans l'expander
+            # Columns inside the expander
             detail_cols = st.columns([2,2])
             
-            # Image ou audio
+            # Image or audio
             img_path = safe_image(n.get("img_path_proc"))
         
             trans = n.get("transcription_clean")
@@ -437,7 +430,7 @@ for n in notes:
         st.markdown("**Actions**")
         a1, a2, _ = st.columns([1, 1, 4])
 
-        # Supprimer une entrée
+        # Delete an entry
         with a1:
             with st.popover("🗑️ Supprimer cette entrée"):
                 st.caption(
@@ -449,7 +442,7 @@ for n in notes:
                     st.success(f"{deleted} entrée supprimée (id={n['id']}).")
                     st.rerun()
 
-        # Supprimer toute une note_id
+        # Delete an entire note_id
         with a2:
             disabled_thread = not n.get("note_id")
             with st.popover("🗑️ Supprimer TOUTE la note_id", disabled=disabled_thread):
@@ -467,11 +460,7 @@ for n in notes:
                             f"{deleted} entrées supprimées (note_id={n['note_id']}).")
                         st.rerun()
 
-
-
-
-
-# Rafraîchissement automatique
+# Automatic refresh
 if REFRESH_SECONDS > 0:
     time.sleep(REFRESH_SECONDS)
     st.rerun()

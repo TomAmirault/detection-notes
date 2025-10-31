@@ -14,10 +14,6 @@ Main features:
 - Pause/resume handling and multithreading support
 """
 
-from vad_detector import speech_activity_splitter
-from audio_recorder import record_audio_segments
-from whisper_transcriber import whisper_transcribe
-
 from pathlib import Path
 
 import threading
@@ -34,6 +30,9 @@ REPO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
 if REPO_PATH not in sys.path:
     sys.path.insert(0, REPO_PATH)
 from src.processing.add_data2db import add_audio2db
+from src.audio.vad_detector import speech_activity_splitter
+from src.audio.audio_recorder import record_audio_segments
+from src.audio.whisper_transcriber import whisper_transcribe
 
 
 
