@@ -1,3 +1,7 @@
+"""
+Main script for paper detection using edge-based shape detection
+"""
+
 from picamera2 import Picamera2
 import time
 from shape_detector_raspberrypi import shape_detector

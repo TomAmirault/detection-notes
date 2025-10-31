@@ -10,11 +10,10 @@ from logger_config import setup_logger
 RASPBERRY_IP = "raspberrypi.local"
 RASPBERRY_USER = "projetrte"
 port = 22
-local_campilots_relative_paths = ["src/raspberry/paper_detection_raspberrypi/image_preprocessing_raspberrypi.py",
-                                   "src/raspberry/paper_detection_raspberrypi/perspective_corrector_raspberrypi.py",
-                                   "src/raspberry/paper_detection_raspberrypi/save_detection_raspberrypi.py",
-                                   "src/raspberry/paper_detection_raspberrypi/shape_detector_raspberrypi.py",
-                                   "src/raspberry/paper_detection_raspberrypi/video_capture_raspberrypi.py"]
+local_campilots_relative_paths = ["src/raspberry/paper_detection_raspberrypi/perspective_corrector_raspberrypi.py",
+                                  "src/raspberry/paper_detection_raspberrypi/save_detection_raspberrypi.py",
+                                  "src/raspberry/paper_detection_raspberrypi/shape_detector_raspberrypi.py",
+                                  "src/raspberry/paper_detection_raspberrypi/video_capture_raspberrypi.py"]
 LOCALxREMOTE_CAMPILOTS_PATHS = {os.path.join(REPO_PATH, rp):os.path.join("/home/projetrte/Documents/pilots", os.path.basename(rp)) for rp in local_campilots_relative_paths}
 REMOTE_MAIN_PATH = LOCALxREMOTE_CAMPILOTS_PATHS[os.path.join(REPO_PATH, "src/raspberry/paper_detection_raspberrypi/video_capture_raspberrypi.py")]
 REMOTE_OUTPUT_DIR = "/home/projetrte/Documents/photos"
@@ -26,14 +25,14 @@ STOP_FILE_PATH = "/home/projetrte/Documents/stop.txt"
 logger = setup_logger("launch_rasp")
 
 try:
-    # --- Connection ---
+    # Connection 
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     ssh.connect(hostname=RASPBERRY_IP, port=port, username=RASPBERRY_USER)
     sftp = ssh.open_sftp() 
     logger.info("Connection established to the Raspberry Pi.")
 
-    # --- Creating the necessary directories locally and on the Raspberry Pi ---
+    # Creating the necessary directories locally and on the Raspberry Pi 
     os.makedirs(LOCAL_OUTPUT_DIR, exist_ok=True)
 
     try:
@@ -51,7 +50,7 @@ try:
     except (FileNotFoundError, IOError) as e:
         logger.error("Error" + str(e) + " raised while creating" + os.path.dirname(REMOTE_MAIN_PATH) + " on the Raspberry.")
 
-    # --- Deleting the STOP file on the Raspberry Pi ---
+    # Deleting the STOP file on the Raspberry Pi 
     try:
         sftp.remove(STOP_FILE_PATH)
         logger.debug("Stop file cleaned.")
@@ -59,17 +58,17 @@ try:
         logger.debug("Stop file already cleaned:")
 
 
-    # --- Copying the camera driver to the Raspberry Pi ---
+    # Copying the camera driver to the Raspberry Pi
     for local, remote in LOCALxREMOTE_CAMPILOTS_PATHS.items():
         sftp.put(local, remote)
     logger.info("Installation of the camera driver on the Raspberry Pi completed.")
 
-    # --- Launching the camera capture ---
+    # Launching the camera capture
     logger.info("Starting camera capture")
     stdin, stdout, stderr = ssh.exec_command(f"nohup python3 {REMOTE_MAIN_PATH} > {os.path.join(REMOTE_LOG_DIR, "main.log")} 2>&1 &")
     logger.info("The camera is now filming.")
 
-    # --- While loop to collect the captured images ---
+    # While loop to collect the captured images
     while True:
         logger.debug("Checking for new files...")
         files = sftp.listdir(REMOTE_OUTPUT_DIR)
