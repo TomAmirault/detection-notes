@@ -127,22 +127,3 @@ def record_audio_segments(
             with open(log_path, "w", encoding="utf-8") as f:
                 json.dump([entry], f, indent=4, ensure_ascii=False)
                      
-           
-if __name__ == "__main__":
-
-    folder_tests = Path("src/audio/tests")
-    
-    for f in folder_tests.glob("*.wav"):
-        try:
-            f.unlink()
-        except Exception as e:
-            print(f"Could not remove {f}: {e}")
-    try:
-        stop_event = threading.Event()
-        enregistrement_thread = threading.Thread(target = record_audio_segments, args=(5, stop_event, 1))
-        enregistrement_thread.start()
-    except KeyboardInterrupt:
-        print("User requested shutdown (Ctrl+C).")
-        stop_event.set()
-        enregistrement_thread.join()
-        print("End.")

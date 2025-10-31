@@ -98,8 +98,3 @@ def whisper_transcribe(
 
     return predicted_sentence, cleaned
 
-if __name__ == "__main__":
-    folder = Path("src/audio/tmp")
-    for audio_path in folder.glob("*.wav"): 
-        print(audio_path)
-        whisper_transcribe(audio_path)

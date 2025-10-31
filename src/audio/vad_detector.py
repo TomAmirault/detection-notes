@@ -136,17 +136,4 @@ def speech_activity_splitter(
     os.remove(audio_path)
     
     
-if __name__ == "__main__":
-    
-    folder = Path("src/audio/tests")
-
-    files = list(folder.glob("*.wav"))
-
-    files_sorted = sorted(
-        files,
-        key=lambda f: int(re.search(r"chunk_(\d+)_", f.name).group(1))
-    )
-
-    for audio_path in files_sorted: 
-        speech_activity_splitter(audio_path, min_duration_on=1, min_duration_off=2)    
 

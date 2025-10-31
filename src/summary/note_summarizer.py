@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 from src.summary.prompt import SUMMARY_PROMPT
 
-# Charger la clé API Mistral
+# Load Mistral API key
 load_dotenv()
 api_key = os.getenv("MISTRAL_API_KEY")
 client = Mistral(api_key=api_key)
@@ -33,14 +33,3 @@ def synthèse(texte: str) -> str:
     return clean_text
 
 
-# Exemple d'utilisation
-if __name__ == "__main__":
-    transcription = """
-~ Ligne 1. Prévoir retrait de la liaison Caen-Cherbourg
-~ Ligne 3. Bien sûr Thierry
-+ Ligne 2. Appel COSE-P à prévoir
-+ Ligne 4. Appeler le COSE Nantes à 19h27
-+ Ligne 5. Changement de propriétaire
-+ Ligne 6. Chacal détecté mai
-    """
-    print(synthèse(transcription))

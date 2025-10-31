@@ -16,17 +16,8 @@ if REPO_PATH not in sys.path:
     sys.path.insert(0, REPO_PATH)
 
 from src.summary.note_summarizer import synthèse
-from src.utils.text_utils import clean_added_text
-
-
-# Maximum duration (in minutes) : maximum total duration of a group.
-# If the group exceeds this duration (in minutes), the group is closed and a new one is started.
-MAX_GROUP_DURATION = 2 # minutes
-
-# Maximum pause (in secondes) : maximum allowed gap between two pieces of information for them to be considered part of the same group.
-# If the pause between two logs exceeds this value, a new group is created.
-MAX_PAUSE = 30 # secondes         
-
+from src.utils.text_utils import clean_added_text      
+from src.frontend.pages.config import MAX_GROUP_DURATION, MAX_PAUSE
 
 @st.cache_data
 def get_synthese(contenu):
