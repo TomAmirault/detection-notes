@@ -10,6 +10,7 @@
 
 ## 📋 Table of Contents
 
+- [Demo](#demo)
 - [Overview](#overview)
 - [Key Features](#key-features)
 - [System Architecture](#system-architecture)
@@ -21,6 +22,21 @@
 - [Troubleshooting](#troubleshooting)
 - [Team](#team)
 - [License](#license)
+
+---
+
+## 🎬 Demo
+
+**Watch a 1-minute demonstration** of D-ScrAibe in action:
+
+📹 **[View Demo Video](docs/demo.mov)**
+
+The demo showcases:
+- Real-time paper detection with YOLO tracking
+- Handwriting recognition and text normalization
+- Automatic entity extraction from dispatcher notes
+- Event grouping and timeline visualization in the Streamlit UI
+- Audio recording with voice activity detection and transcription
 
 ---
 
@@ -691,10 +707,8 @@ print(f"Deleted {deleted_count} entries")
 
 ### Development Team
 
-**Project Lead:**
-- Tom Amirault — [tom.amirault@student-cs.fr](mailto:tom.amirault@student-cs.fr)
-
 **Core Developers:**
+- Tom Amirault — [tom.amirault@student-cs.fr](mailto:tom.amirault@student-cs.fr)
 - Mohammed Lbakali — [mohammed.lbakali@student-cs.fr](mailto:mohammed.lbakali@student-cs.fr)
 - Alexandre Corrard — [alexandre.corrard@student-cs.fr](mailto:alexandre.corrard@student-cs.fr)
 - Noah Parisse — [noah.parisse@student-cs.fr](mailto:noah.parisse@student-cs.fr)
