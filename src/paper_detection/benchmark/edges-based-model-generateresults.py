@@ -1,7 +1,7 @@
 import os, sys
 import numpy as np
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from shape_detector import get_mask
+from src.paper_detection.edges_based.shape_detector import get_mask
 import cv2
 import matplotlib.pyplot as plt
 

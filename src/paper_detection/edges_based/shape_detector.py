@@ -121,3 +121,24 @@ def shape_detector(img: np.ndarray, bilateral_d: int = BILATERAL_D, bilateral_si
                 valid_shapes.append(approx)
 
     return valid_shapes
+
+
+
+def get_mask(img: np.ndarray) -> np.ndarray:
+    """
+    Generates a binary mask highlighting detected paper areas in the given image.
+
+    Args:
+        img (np.ndarray): Input image.
+
+    Returns:
+        np.ndarray: Binary mask where detected paper regions are filled with white and the background is black.
+    """
+    h, w = img.shape[:2]
+    mask = np.zeros((h, w), dtype=np.uint8)
+
+    possible_papers = shape_detector(img)
+    if len(possible_papers) > 0:
+        cv2.drawContours(mask, possible_papers, -1, 255, thickness=cv2.FILLED)
+
+    return mask
