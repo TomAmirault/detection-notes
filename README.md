@@ -29,7 +29,7 @@
 
 **Watch a 1-minute demonstration** of D-ScrAibe in action:
 
-📹 **[View Demo Video](docs/demo.mov)**
+📹 **https://centralesupelec-my.sharepoint.com/personal/tom_amirault_student-cs_fr/_layouts/15/stream.aspx?id=%2Fpersonal%2Ftom%5Famirault%5Fstudent%2Dcs%5Ffr%2FDocuments%2FPi%C3%A8ces%20jointes%2FDemo%2Emov&ga=1&referrer=StreamWebApp%2EWeb&referrerScenario=AddressBarCopied%2Eview%2E17e7f399%2Dd04c%2D458b%2D9fc2%2D2702510a31d7**
 
 The demo showcases:
 - Real-time paper detection with YOLO tracking
